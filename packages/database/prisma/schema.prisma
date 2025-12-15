@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+  WAREHOUSE
+  ACCOUNTANT
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(CASHIER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  sales            Invoice[]
+  stockAdjustments StockAdjustment[]
+  auditLogs        AuditLog[]
+  expenses         Expense[]
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  description String
+  amount      Decimal  @db.Decimal(10, 2)
+  category    String
+  date        DateTime @default(now())
+  userId      Int      @map("user_id")
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String   // e.g., "DELETE_CUSTOMER", "CREATE_SALE"
+  entity    String   // "Customer", "Sale"
+  entityId  String   // ID of the affected entity
+  details   String?  // JSON string or description
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  timestamp DateTime @default(now())
+}
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  sku             String    @unique
+  name            String
+  brand           String?
+  category        String?
+  compatibility   String?   // "Toyota Camry 2020, Honda Civic..."
+  costPrice       Decimal   @map("cost_price") @db.Decimal(10, 2)
+  salePrice       Decimal   @map("sale_price") @db.Decimal(10, 2)
+  salePriceAFN    Decimal?  @map("sale_price_afn") @db.Decimal(10, 2)
+  quantityOnHand  Int       @default(0) @map("quantity_on_hand")
+  reorderLevel    Int       @default(5) @map("reorder_level")
+  location        String?   // "Shelf A1"
+  barcode         String?   @unique
+  notes           String?
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  stockAdjustments StockAdjustment[]
+  invoiceItems     InvoiceItem[]
+}
+
+model StockAdjustment {
+  id        Int      @id @default(autoincrement())
+  productId Int      @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id])
+  qtyChange Int      @map("qty_change") // Positive for add, negative for remove
+  reason    String
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id                 Int      @id @default(autoincrement())
+  displayId          String?  @unique @map("display_id") // Custom ID: AB12345
+  name               String
+  phone              String?
+  email              String?
+  address            String?
+  creditLimit        Decimal  @default(0) @map("credit_limit") @db.Decimal(10, 2)
+  outstandingBalance Decimal  @default(0) @map("outstanding_balance") @db.Decimal(10, 2)
+  outstandingBalanceAFN Decimal @default(0) @map("outstanding_balance_afn") @db.Decimal(10, 2)
+  paymentTerms       String?  // "Net 30", etc.
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  invoices      Invoice[]
+  payments      Payment[]
+  creditEntries CreditEntry[]
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PAID
+  PARTIAL
+  OVERDUE
+  CANCELLED
+}
+
+model Invoice {
+  id              Int           @id @default(autoincrement())
+  invoiceNumber   String        @unique @map("invoice_number")
+  customerId      Int?          @map("customer_id")
+  customer        Customer?     @relation(fields: [customerId], references: [id])
+  userId          Int           @map("user_id") // Cashier
+  user            User          @relation(fields: [userId], references: [id])
+  
+  date            DateTime      @default(now())
+  subtotal        Decimal       @db.Decimal(10, 2)
+  tax             Decimal       @default(0) @db.Decimal(10, 2)
+  discount        Decimal       @default(0) @db.Decimal(10, 2)
+  total           Decimal       @db.Decimal(10, 2)
+  
+  exchangeRate    Decimal       @default(1) @map("exchange_rate") @db.Decimal(10, 2) // USD -> AFG
+  totalLocal      Decimal?      @map("total_local") @db.Decimal(10, 2) // Total in AFG
+
+  paidAmount      Decimal       @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  outstandingAmount Decimal     @default(0) @map("outstanding_amount") @db.Decimal(10, 2)
+  status          InvoiceStatus @default(DRAFT)
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  items         InvoiceItem[]
+  payments      Payment[]
+  creditEntries CreditEntry[]
+}
+
+model InvoiceItem {
+  id        Int      @id @default(autoincrement())
+  invoiceId Int      @map("invoice_id")
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+  productId Int      @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  returnedQuantity Int @default(0) @map("returned_quantity")
+  unitPrice Decimal  @map("unit_price") @db.Decimal(10, 2)
+  total     Decimal  @db.Decimal(10, 2)
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  MOBILE_PAY
+  BANK_TRANSFER
+  OTHER
+}
+
+model Payment {
+  id         Int           @id @default(autoincrement())
+  invoiceId  Int?          @map("invoice_id") // Optional, can be general payment on account
+  invoice    Invoice?      @relation(fields: [invoiceId], references: [id])
+  customerId Int           @map("customer_id")
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  
+  amount     Decimal       @db.Decimal(10, 2)
+  amountAFN  Decimal?      @default(0) @map("amount_afn") @db.Decimal(10, 2) // Track AFN payment
+  method     PaymentMethod
+  reference  String?       // Transaction ID, Check #
+  date       DateTime      @default(now())
+}
+
+model CreditEntry {
+  id               Int      @id @default(autoincrement())
+  customerId       Int      @map("customer_id")
+  customer         Customer @relation(fields: [customerId], references: [id])
+  invoiceId        Int      @map("invoice_id")
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  
+  originalAmount   Decimal  @map("original_amount") @db.Decimal(10, 2) // The amount that was credited (Loan) USD
+  originalAmountAFN Decimal? @default(0) @map("original_amount_afn") @db.Decimal(10, 2) // AFN
+  
+  paidAmount       Decimal  @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  paidAmountAFN    Decimal? @default(0) @map("paid_amount_afn") @db.Decimal(10, 2)
+  
+  remainingBalance Decimal  @map("remaining_balance") @db.Decimal(10, 2)
+  remainingBalanceAFN Decimal? @default(0) @map("remaining_balance_afn") @db.Decimal(10, 2)
+
+  dueDate          DateTime? @map("due_date")
+  status           String    @default("ACTIVE") // ACTIVE, CLEARED, WRITE_OFF
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model SystemSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  description String?
+  updatedAt DateTime @updatedAt
+}

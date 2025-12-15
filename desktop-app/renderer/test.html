@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ibrahimi Store - Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🏎️ Ibrahimi Store - Debug Test</h1>
+  
+  <div id="status"></div>
+  
+  <h2>Tests:</h2>
+  <button onclick="testAPI()">1. Test Electron API</button>
+  <button onclick="testLogin()">2. Test Login</button>
+  <button onclick="testDashboard()">3. Test Dashboard</button>
+  
+  <div id="results" style="margin-top: 20px;"></div>
+
+  <script>
+    const resultsDiv = document.getElementById('results');
+    const statusDiv = document.getElementById('status');
+    
+    function log(message, type = 'info') {
+      console.log(message);
+      const p = document.createElement('p');
+      p.textContent = message;
+      p.className = 'status ' + (type === 'error' ? 'error' : 'success');
+      resultsDiv.appendChild(p);
+    }
+    
+    // Check if API is available on load
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof window.electronAPI !== 'undefined') {
+        statusDiv.innerHTML = '<div class="status success">✅ Electron API is loaded!</div>';
+        log('✅ All systems ready');
+      } else {
+        statusDiv.innerHTML = '<div class="status error">❌ Electron API not found!</div>';
+        log('❌ Electron API missing - check preload.js', 'error');
+      }
+    });
+    
+    function testAPI() {
+      resultsDiv.innerHTML = '';
+      log('Testing Electron API...');
+      
+      if (window.electronAPI) {
+        log('✅ electronAPI exists');
+        log('✅ login function: ' + typeof window.electronAPI.login);
+        log('✅ getDashboardStats: ' + typeof window.electronAPI.getDashboardStats);
+      } else {
+        log('❌ electronAPI not found', 'error');
+      }
+    }
+    
+    async function testLogin() {
+      resultsDiv.innerHTML = '';
+      log('Testing login...');
+      
+      try {
+        const result = await window.electronAPI.login({
+          email: 'admin@mns.com',
+          password: 'Samir1379'
+        });
+        
+        if (result.success) {
+          log('✅ Login successful!');
+          log('User: ' + result.data.user.name);
+          log('Role: ' + result.data.user.role);
+        } else {
+          log('❌ Login failed: ' + result.message, 'error');
+        }
+      } catch (error) {
+        log('❌ Error: ' + error.message, 'error');
+      }
+    }
+    
+    async function testDashboard() {
+      resultsDiv.innerHTML = '';
+      log('Testing dashboard stats...');
+      
+      try {
+        const result = await window.electronAPI.getDashboardStats();
+        
+        if (result.success) {
+          log('✅ Dashboard stats loaded!');
+          log('Today sales: ' + result.data.today.count);
+          log('Total products: ' + result.data.products.total);
+          log('Total customers: ' + result.data.customers);
+        } else {
+          log('❌ Failed: ' + result.message, 'error');
+        }
+      } catch (error) {
+        log('❌ Error: ' + error.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

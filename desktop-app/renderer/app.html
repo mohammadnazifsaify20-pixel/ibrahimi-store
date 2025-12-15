@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ibrahimi Store - Desktop App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; cursor: pointer; border: none; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: #64748b; color: white; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-success { background: #16a34a; color: white; }
+        .btn-success:hover { background: #15803d; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .cart-item { animation: slideIn 0.2s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        input, select, textarea { padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; width: 100%; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .sidebar { width: 240px; background: #1e293b; color: white; position: fixed; left: 0; top: 0; bottom: 0; overflow-y: auto; }
+        .sidebar a { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem; color: #cbd5e1; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #334155; color: white; }
+        .main-content { margin-left: 240px; padding: 2rem; min-height: 100vh; background: #f8fafc; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 0.5rem; overflow: hidden; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f1f5f9; font-weight: 600; color: #475569; }
+        tr:hover { background: #f8fafc; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="p-6 border-b border-gray-700">
+            <h1 class="text-xl font-bold">Ibrahimi Store</h1>
+            <p class="text-sm text-gray-400 mt-1" id="user-email">Loading...</p>
+        </div>
+        <nav class="py-4">
+            <a href="#" onclick="showPage('dashboard')" id="nav-dashboard" class="active">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="#" onclick="showPage('pos')" id="nav-pos">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Point of Sale
+            </a>
+            <a href="#" onclick="showPage('inventory')" id="nav-inventory">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                Inventory
+            </a>
+            <a href="#" onclick="showPage('sales')" id="nav-sales">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Sales
+            </a>
+            <a href="#" onclick="showPage('customers')" id="nav-customers">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Customers
+            </a>
+            <a href="#" onclick="showPage('expenses')" id="nav-expenses">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Expenses
+            </a>
+            <a href="#" onclick="showPage('reports')" id="nav-reports">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Reports
+            </a>
+            <a href="#" onclick="showPage('settings')" id="nav-settings">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Settings
+            </a>
+        </nav>
+        <div class="border-t border-gray-700 p-4 mt-auto">
+            <button onclick="logout()" class="w-full btn btn-secondary flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Dashboard Page -->
+        <div id="page-dashboard" class="page">
+            <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card">
+                    <div class="text-sm text-gray-600 mb-1">Today's Sales</div>
+                    <div class="text-3xl font-bold text-blue-600" id="stat-today-sales">؋0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm text-gray-600 mb-1">This Month</div>
+                    <div class="text-3xl font-bold text-green-600" id="stat-month-sales">؋0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm text-gray-600 mb-1">Total Products</div>
+                    <div class="text-3xl font-bold text-purple-600" id="stat-products">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm text-gray-600 mb-1">Outstanding</div>
+                    <div class="text-3xl font-bold text-orange-600" id="stat-outstanding">؋0</div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-bold mb-4">Recent Sales</h3>
+                <div id="recent-sales-list" class="space-y-2">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- POS Page -->
+        <div id="page-pos" class="page" style="display:none;">
+            <h2 class="text-3xl font-bold mb-6">Point of Sale</h2>
+            <div class="grid grid-cols-12 gap-6">
+                <!-- Products Grid -->
+                <div class="col-span-8">
+                    <input type="text" id="pos-search" placeholder="Search products..." class="mb-4">
+                    <div id="pos-products-grid" class="grid grid-cols-3 gap-4 max-h-[70vh] overflow-y-auto">
+                        <p class="col-span-3 text-center text-gray-500">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Cart -->
+                <div class="col-span-4 bg-white p-6 rounded-lg shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Cart</h3>
+                        <button onclick="clearCart()" class="text-sm text-red-600 hover:underline">Clear</button>
+                    </div>
+                    <div id="cart-items" class="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
+                        <p class="text-center text-gray-500">Cart is empty</p>
+                    </div>
+                    <div class="border-t pt-4 space-y-3">
+                        <div class="flex justify-between text-2xl font-bold">
+                            <span>Total</span>
+                            <span id="cart-total">؋0</span>
+                        </div>
+                        <button onclick="openCheckoutModal()" class="w-full btn btn-primary py-3 text-lg">Checkout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Page -->
+        <div id="page-inventory" class="page" style="display:none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">Inventory Management</h2>
+                <button onclick="openAddProductModal()" class="btn btn-primary">+ Add Product</button>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow mb-4">
+                <input type="text" id="inventory-search" placeholder="Search products..." class="mb-4">
+            </div>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table id="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Name</th>
+                            <th>Brand</th>
+                            <th>Category</th>
+                            <th>Cost Price</th>
+                            <th>Sale Price</th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-tbody">
+                        <tr><td colspan="8" class="text-center text-gray-500">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sales Page -->
+        <div id="page-sales" class="page" style="display:none;">
+            <h2 class="text-3xl font-bold mb-6">Sales History</h2>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table id="sales-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Total</th>
+                            <th>Paid</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sales-tbody">
+                        <tr><td colspan="7" class="text-center text-gray-500">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Customers Page -->
+        <div id="page-customers" class="page" style="display:none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">Customers</h2>
+                <button onclick="openAddCustomerModal()" class="btn btn-primary">+ Add Customer</button>
+            </div>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table id="customers-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Outstanding</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-tbody">
+                        <tr><td colspan="5" class="text-center text-gray-500">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Expenses Page -->
+        <div id="page-expenses" class="page" style="display:none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">Expenses</h2>
+                <button onclick="openAddExpenseModal()" class="btn btn-primary">+ Add Expense</button>
+            </div>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table id="expenses-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenses-tbody">
+                        <tr><td colspan="5" class="text-center text-gray-500">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Reports Page -->
+        <div id="page-reports" class="page" style="display:none;">
+            <h2 class="text-3xl font-bold mb-6">Reports</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-bold mb-4">Sales Report</h3>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Start Date</label>
+                        <input type="date" id="report-start-date" class="w-full">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">End Date</label>
+                        <input type="date" id="report-end-date" class="w-full">
+                    </div>
+                </div>
+                <button onclick="generateReport()" class="btn btn-primary">Generate Report</button>
+                <div id="report-results" class="mt-6" style="display:none;">
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div class="stat-card">
+                            <div class="text-sm text-gray-600">Total Sales</div>
+                            <div class="text-2xl font-bold" id="report-total-sales">؋0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="text-sm text-gray-600">Total Profit</div>
+                            <div class="text-2xl font-bold text-green-600" id="report-total-profit">؋0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="text-sm text-gray-600">Invoices</div>
+                            <div class="text-2xl font-bold" id="report-invoice-count">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="page-settings" class="page" style="display:none;">
+            <h2 class="text-3xl font-bold mb-6">Settings</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- System Settings -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold mb-4">System Settings</h3>
+                    <form onsubmit="saveSettings(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Exchange Rate (USD to AFN)</label>
+                            <input type="number" id="settings-exchange-rate" step="0.01" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Tax Rate (%)</label>
+                            <input type="number" id="settings-tax-rate" step="0.01" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Company Name</label>
+                            <input type="text" id="settings-company-name" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Admin Password (for deletions)</label>
+                            <input type="password" id="settings-admin-password" placeholder="Leave blank to keep current">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </form>
+                </div>
+
+                <!-- User Profile -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold mb-4">User Profile</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Email</label>
+                            <input type="text" id="profile-email" disabled class="bg-gray-100">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Role</label>
+                            <input type="text" id="profile-role" disabled class="bg-gray-100">
+                        </div>
+                        <button onclick="openModal('modal-change-password')" class="btn btn-primary w-full">Change Password</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="modal-add-product" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <h3 class="text-2xl font-bold mb-4">Add Product</h3>
+            <form onsubmit="saveProduct(event)" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">SKU</label>
+                        <input type="text" id="product-sku" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Name</label>
+                        <input type="text" id="product-name" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Brand</label>
+                        <input type="text" id="product-brand" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Category</label>
+                        <input type="text" id="product-category" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Cost Price ($)</label>
+                        <input type="number" id="product-cost-price" step="0.01" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Sale Price ($)</label>
+                        <input type="number" id="product-sale-price" step="0.01" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Quantity</label>
+                        <input type="number" id="product-quantity" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Location</label>
+                        <input type="text" id="product-location" required>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save Product</button>
+                    <button type="button" onclick="closeModal('modal-add-product')" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Customer Modal -->
+    <div id="modal-add-customer" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4">Add Customer</h3>
+            <form onsubmit="saveCustomer(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Name</label>
+                    <input type="text" id="customer-name" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Phone</label>
+                    <input type="text" id="customer-phone" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Email</label>
+                    <input type="email" id="customer-email">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Address</label>
+                    <textarea id="customer-address" rows="3"></textarea>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save Customer</button>
+                    <button type="button" onclick="closeModal('modal-add-customer')" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="modal-add-expense" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4">Add Expense</h3>
+            <form onsubmit="saveExpense(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Category</label>
+                    <select id="expense-category" required>
+                        <option value="rent">Rent</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="salaries">Salaries</option>
+                        <option value="supplies">Supplies</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Description</label>
+                    <textarea id="expense-description" rows="3" required></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Amount (AFN)</label>
+                    <input type="number" id="expense-amount" step="0.01" required>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save Expense</button>
+                    <button type="button" onclick="closeModal('modal-add-expense')" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="modal-checkout" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4">Checkout</h3>
+            <form onsubmit="processCheckout(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Customer</label>
+                    <select id="checkout-customer" required>
+                        <option value="">Select Customer...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Payment Method</label>
+                    <select id="checkout-payment-method" required>
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="credit">Credit (Pay Later)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Amount Paid (AFN)</label>
+                    <input type="number" id="checkout-amount" step="0.01" required>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <div class="flex justify-between text-lg font-bold">
+                        <span>Total:</span>
+                        <span id="checkout-total">؋0</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-success">Complete Sale</button>
+                    <button type="button" onclick="closeModal('modal-checkout')" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invoice Detail Modal -->
+    <div id="modal-invoice-detail" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">Invoice Details</h3>
+                <div class="flex gap-2">
+                    <button onclick="printInvoice()" class="btn btn-primary">Print</button>
+                    <button onclick="closeModal('modal-invoice-detail')" class="btn btn-secondary">Close</button>
+                </div>
+            </div>
+            <div id="invoice-content"></div>
+        </div>
+    </div>
+
+    <!-- Receive Payment Modal -->
+    <div id="modal-receive-payment" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4">Receive Payment</h3>
+            <form onsubmit="processPayment(event)" class="space-y-4">
+                <input type="hidden" id="payment-invoice-id">
+                <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                    <div class="flex justify-between mb-2">
+                        <span>Invoice:</span>
+                        <span class="font-bold" id="payment-invoice-number"></span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Total:</span>
+                        <span class="font-bold" id="payment-total"></span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Already Paid:</span>
+                        <span class="font-bold text-green-600" id="payment-already-paid"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Outstanding:</span>
+                        <span class="font-bold text-red-600" id="payment-outstanding"></span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Payment Amount (AFN)</label>
+                    <input type="number" id="payment-amount" step="0.01" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Payment Method</label>
+                    <select id="payment-method" required>
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="bank">Bank Transfer</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-success">Receive Payment</button>
+                    <button type="button" onclick="closeModal('modal-receive-payment')" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="modal-change-password" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4">Change Password</h3>
+            <form onsubmit="changePassword(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">New Password</label>
+                    <input type="password" id="new-password" minlength="6" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Confirm New Password</label>
+                    <input type="password" id="confirm-password" minlength="6" required>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                    <button type="button" onclick="closeModal('modal-change-password')" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
