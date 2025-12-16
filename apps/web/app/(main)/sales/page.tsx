@@ -363,10 +363,10 @@ export default function SalesPage() {
                                     ) : selectedInvoice ? (
                                         <>
                                             {/* Company Header with Logo */}
-                                            <div className="border-b-2 pb-4 mb-6 print:border-b">
+                                            <div className="border-b-2 pb-4 mb-6 print:border-b" id="invoice-header">
                                                 <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-4">
-                                                        <img src="/logo.png" alt="Company Logo" className="h-20 w-auto" id="invoice-logo" />
+                                                    <div className="flex items-center gap-4" id="company-info">
+                                                        <img src="/logo.png" alt="Company Logo" className="h-20 w-auto invoice-logo" id="invoice-logo" />
                                                         <div>
                                                             <h1 className="text-xl font-bold text-gray-900">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
                                                             <p className="text-sm text-gray-600 mt-1">Motor Parts & Accessories</p>
@@ -564,6 +564,11 @@ export default function SalesPage() {
                                             #invoice-watermark *,
                                             #invoice-content,
                                             #invoice-content *,
+                                            #invoice-header,
+                                            #invoice-header *,
+                                            #company-info,
+                                            #company-info *,
+                                            .invoice-logo,
                                             #invoice-logo {
                                                 visibility: visible !important;
                                             }
@@ -582,11 +587,15 @@ export default function SalesPage() {
                                             }
                                             #invoice-watermark img {
                                                 display: block !important;
+                                                visibility: visible !important;
                                             }
-                                            #invoice-logo {
+                                            #invoice-logo,
+                                            .invoice-logo {
                                                 display: block !important;
+                                                visibility: visible !important;
                                                 max-height: 80px !important;
                                                 width: auto !important;
+                                                opacity: 1 !important;
                                             }
                                         }
                                     `}</style>
