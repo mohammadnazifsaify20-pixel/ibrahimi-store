@@ -30,9 +30,11 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
     if (!customer) return <div>Customer not found</div>;
 
     return (
-        <div className="min-h-screen bg-white text-black p-4 flex items-start justify-center print:p-0 print:m-0">
+        <>
+        <div className="min-h-screen bg-white text-black p-4 flex items-center justify-center">
             {/* ID Card Container */}
             <div
+                id="printable-card"
                 className="border-2 border-black rounded-xl p-4 w-[85.6mm] h-[53.98mm] relative overflow-hidden flex flex-col justify-between bg-white"
                 style={{ breakInside: 'avoid' }}
             >
@@ -81,12 +83,26 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                         size: 85.6mm 53.98mm;
                         margin: 0;
                     }
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
                     body {
                         margin: 0;
                         padding: 0;
                     }
+                    body > * {
+                        display: none !important;
+                    }
+                    #printable-card {
+                        display: flex !important;
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                    }
                 }
             `}</style>
         </div>
+        </>
     );
 }

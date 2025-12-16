@@ -350,12 +350,12 @@ export default function SalesPage() {
                                 leaveFrom="opacity-100 scale-100"
                                 leaveTo="opacity-0 scale-95"
                             >
-                                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-8 text-left align-middle shadow-xl transition-all relative">
+                                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-8 text-left align-middle shadow-xl transition-all relative" id="invoice-modal">
                                     {/* Background Logo Watermark */}
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 z-0">
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 z-0" id="invoice-watermark">
                                         <img src="/logo.png" alt="" className="w-96 h-auto" style={{ filter: 'blur(2px)' }} />
                                     </div>
-                                    <div className="relative z-10">
+                                    <div className="relative z-10" id="invoice-content">
                                     {invoiceLoading ? (
                                         <div className="flex justify-center items-center py-12">
                                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -363,22 +363,30 @@ export default function SalesPage() {
                                     ) : selectedInvoice ? (
                                         <>
                                             {/* Company Header with Logo */}
-                                            <div className="border-b-2 pb-4 mb-6">
+                                            <div className="border-b-2 pb-4 mb-6 print:border-b">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-4">
-                                                        <img src="/logo.png" alt="Company Logo" className="h-20 w-auto" />
+                                                        <img src="/logo.png" alt="Company Logo" className="h-20 w-auto" id="invoice-logo" />
                                                         <div>
                                                             <h1 className="text-xl font-bold text-gray-900">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
                                                             <p className="text-sm text-gray-600 mt-1">Motor Parts & Accessories</p>
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => setIsViewModalOpen(false)}
-                                                        className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
-                                                    >
-                                                        {/* @ts-ignore */}
-                                                        <X size={24} />
-                                                    </button>
+                                                    <div className="flex gap-2 print:hidden">
+                                                        <button
+                                                            onClick={() => window.print()}
+                                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                                        >
+                                                            Print Invoice
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setIsViewModalOpen(false)}
+                                                            className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
+                                                        >
+                                                            {/* @ts-ignore */}
+                                                            <X size={24} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -535,6 +543,32 @@ export default function SalesPage() {
                                         </>
                                     ) : null}
                                     </div>
+                                    
+                                    <style jsx global>{`
+                                        @media print {
+                                            * {
+                                                -webkit-print-color-adjust: exact !important;
+                                                print-color-adjust: exact !important;
+                                            }
+                                            body > *:not(#headlessui-portal-root) {
+                                                display: none !important;
+                                            }
+                                            #headlessui-portal-root {
+                                                position: static !important;
+                                            }
+                                            #invoice-modal {
+                                                max-width: 100% !important;
+                                                box-shadow: none !important;
+                                                border-radius: 0 !important;
+                                            }
+                                            #invoice-watermark {
+                                                opacity: 0.05 !important;
+                                            }
+                                            #invoice-logo {
+                                                display: block !important;
+                                            }
+                                        }
+                                    `}</style>
                                 </Dialog.Panel>
                             </Transition.Child>
                         </div>
