@@ -13,12 +13,13 @@ export default function ProductImportModal({ isOpen, onClose, onSuccess }: Produ
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState<any>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
     if (!isOpen) return null;
 
     const handleDownloadTemplate = async () => {
         try {
-            const res = await fetch('http://localhost:5000/products/template');
+            const res = await fetch(`${API_URL}/products/template`);
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -49,7 +50,7 @@ export default function ProductImportModal({ isOpen, onClose, onSuccess }: Produ
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/products/import', {
+            const res = await fetch(`${API_URL}/products/import`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
