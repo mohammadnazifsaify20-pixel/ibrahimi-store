@@ -350,7 +350,12 @@ export default function SalesPage() {
                                 leaveFrom="opacity-100 scale-100"
                                 leaveTo="opacity-0 scale-95"
                             >
-                                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-8 text-left align-middle shadow-xl transition-all">
+                                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-8 text-left align-middle shadow-xl transition-all relative">
+                                    {/* Background Logo Watermark */}
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 z-0">
+                                        <img src="/logo.png" alt="" className="w-96 h-auto" style={{ filter: 'blur(2px)' }} />
+                                    </div>
+                                    <div className="relative z-10">
                                     {invoiceLoading ? (
                                         <div className="flex justify-center items-center py-12">
                                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -519,6 +524,7 @@ export default function SalesPage() {
                                             </div>
                                         </>
                                     ) : null}
+                                    </div>
                                 </Dialog.Panel>
                             </Transition.Child>
                         </div>

@@ -153,7 +153,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                {/* Background Logo Watermark */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 z-0">
+                    <img src="/logo.png" alt="" className="w-1/2 h-auto" style={{ filter: 'blur(2px)' }} />
+                </div>
                 {/* Mobile Header */}
                 <header className="h-16 bg-white border-b flex items-center justify-between px-4 sm:px-6 lg:px-8 relative print:hidden">
                     <div className="flex items-center gap-4">
@@ -205,7 +209,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-auto p-6 md:p-10 lg:p-12">
+                <div className="flex-1 overflow-auto p-6 md:p-10 lg:p-12 relative z-10">
                     <div className="max-w-7xl mx-auto space-y-6">
                         {children}
                     </div>

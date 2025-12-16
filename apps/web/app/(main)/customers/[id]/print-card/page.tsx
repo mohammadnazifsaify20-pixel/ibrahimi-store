@@ -36,8 +36,12 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                 className="border-2 border-black rounded-xl p-4 w-[85.6mm] h-[53.98mm] relative overflow-hidden flex flex-col justify-between"
                 style={{ breakInside: 'avoid' }}
             >
+                {/* Background Logo Watermark */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 z-0">
+                    <img src="/logo.png" alt="" className="h-full w-auto" style={{ filter: 'blur(1px)' }} />
+                </div>
                 {/* Header with Logo */}
-                <div className="text-center border-b-2 border-black pb-1 mb-1">
+                <div className="text-center border-b-2 border-black pb-1 mb-1 relative z-10">
                     <div className="flex justify-center mb-1">
                         <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
                     </div>
@@ -47,7 +51,7 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 flex flex-col justify-center items-center py-2">
+                <div className="flex-1 flex flex-col justify-center items-center py-2 relative z-10">
                     <div className="text-center w-full">
                         <p className="text-[10px] uppercase text-gray-600 font-bold mb-0.5">Customer Name</p>
                         <h2 className="text-xl font-bold truncate px-2">{customer.name}</h2>
@@ -66,7 +70,7 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                 </div>
 
                 {/* Footer / Barcode Placeholder */}
-                <div className="text-center text-[8px] pt-1 border-t border-black mt-1">
+                <div className="text-center text-[8px] pt-1 border-t border-black mt-1 relative z-10">
                     Please present this card for identification
                 </div>
             </div>
