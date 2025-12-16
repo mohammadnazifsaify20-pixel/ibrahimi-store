@@ -11,6 +11,7 @@ function getDatabase() {
     const dbPath = path.join(userDataPath, 'ibrahimi-store.db');
     db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
+    db.pragma('encoding = "UTF-8"');
   }
   return db;
 }

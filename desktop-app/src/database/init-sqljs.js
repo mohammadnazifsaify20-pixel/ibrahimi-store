@@ -24,6 +24,9 @@ async function getDatabase() {
       db = new SQL.Database();
     }
     
+    // Set UTF-8 encoding for proper Persian/Farsi/Dari character support
+    db.run('PRAGMA encoding = "UTF-8"');
+    
     // Save database changes to file periodically
     setInterval(() => {
       saveDatabase(dbPath);

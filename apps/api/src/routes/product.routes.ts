@@ -41,9 +41,9 @@ const stockAdjustmentSchema = z.object({
 // Download CSV Template
 router.get('/template', (req: Request, res: Response) => {
     const headers = ['sku', 'name', 'cost_price', 'sale_price', 'sale_price_afg', 'exchange_rate', 'quantity', 'category', 'brand', 'compatibility', 'location', 'barcode', 'notes'];
-    const csvContent = headers.join(',') + '\n' + 'SKU_EXAMPLE,Brake Pads,10.00,,140,70,100,Brakes,Toyota,Camry 2020,Shelf A1,12345678,Premium pads';
+    const csvContent = '\uFEFF' + headers.join(',') + '\n' + 'SKU_EXAMPLE,Brake Pads,10.00,,140,70,100,Brakes,Toyota,Camry 2020,Shelf A1,12345678,Premium pads';
 
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename=product_template.csv');
     res.send(csvContent);
 });
@@ -120,7 +120,7 @@ router.post('/import', authenticate, authorize([Role.ADMIN, Role.MANAGER]), uplo
         let rowCount = 0;
 
         const stream = Readable.from(req.file.buffer)
-            .pipe(csvParser())
+            .pipe(csvParser({ encoding: 'utf8' }))
             .on('data', (data) => {
                 rowCount++;
 
@@ -391,7 +391,7 @@ router.post('/import', authenticate, authorize([Role.ADMIN, Role.MANAGER]), uplo
         let rowCount = 0;
 
         const stream = Readable.from(req.file.buffer)
-            .pipe(csvParser())
+            .pipe(csvParser({ encoding: 'utf8' }))
             .on('data', (data) => {
                 rowCount++;
 

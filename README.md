@@ -114,7 +114,7 @@ Create `.env` files in both `apps/web` and `apps/api` (or a root `.env` if confi
 
 **`apps/api/.env`**:
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/ibrahimi_store?schema=public"
+DATABASE_URL="postgresql://user:password@localhost:5432/ibrahimi_store?schema=public&client_encoding=UTF8"
 JWT_SECRET="your-super-secret-key"
 PORT=3001
 ```

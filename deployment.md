@@ -16,7 +16,7 @@ This project is a monorepo managed by Turborepo. It contains:
 Ensure you have a `.env` file in `packages/database` with your database connection string:
 ```env
 # packages/database/.env
-DATABASE_URL="postgresql://user:password@localhost:5432/motor_parts_db"
+DATABASE_URL="postgresql://user:password@localhost:5432/motor_parts_db?client_encoding=UTF8"
 ```
 
 Push the schema to the database:
