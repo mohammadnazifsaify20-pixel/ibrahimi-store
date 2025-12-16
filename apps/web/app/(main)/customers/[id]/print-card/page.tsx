@@ -43,11 +43,8 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 z-0">
                     <img src="/logo.png" alt="" className="h-full w-auto" style={{ filter: 'blur(1px)' }} />
                 </div>
-                {/* Header with Logo */}
+                {/* Header */}
                 <div className="text-center border-b-2 border-black pb-1 mb-1 relative z-10">
-                    <div className="flex justify-center mb-1">
-                        <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
-                    </div>
                     <h1 className="text-[9px] font-black uppercase tracking-wider leading-tight">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
                     <h2 className="text-[10px] font-bold font-arabic leading-tight my-0.5">(شرکت پرزه جات ابراهیمی و برادران)</h2>
                     <p className="text-[8px] font-bold bg-black text-white inline-block px-2 rounded-full mt-0.5">VIP CUSTOMER CARD</p>
