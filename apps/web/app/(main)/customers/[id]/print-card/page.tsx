@@ -96,21 +96,39 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                         height: 53.98mm !important;
                         overflow: hidden !important;
                     }
+                    body * {
+                        visibility: hidden !important;
+                    }
+                    #card-wrapper,
+                    #card-wrapper *,
+                    #printable-card,
+                    #printable-card * {
+                        visibility: visible !important;
+                    }
                     #card-wrapper {
-                        min-height: 53.98mm !important;
+                        position: fixed !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        width: 85.6mm !important;
                         height: 53.98mm !important;
+                        min-height: 53.98mm !important;
+                        max-height: 53.98mm !important;
                         padding: 0 !important;
                         margin: 0 !important;
                         display: flex !important;
                         align-items: center !important;
                         justify-content: center !important;
+                        page-break-after: avoid !important;
+                        page-break-before: avoid !important;
+                        page-break-inside: avoid !important;
                     }
-                    .print-card, .print-card * {
-                        visibility: visible !important;
-                        display: flex !important;
+                    #printable-card {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     .print-card img {
                         display: block !important;
+                        visibility: visible !important;
                     }
                 }
             `}</style>

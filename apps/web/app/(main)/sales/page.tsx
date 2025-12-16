@@ -366,7 +366,13 @@ export default function SalesPage() {
                                             <div className="border-b-2 pb-4 mb-6 print:border-b" id="invoice-header">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-4" id="company-info">
-                                                        <img src="/logo.png" alt="Company Logo" className="h-20 w-auto invoice-logo" id="invoice-logo" />
+                                                        <img 
+                                                            src="/logo.png" 
+                                                            alt="Company Logo" 
+                                                            className="h-20 w-auto invoice-logo" 
+                                                            id="invoice-logo"
+                                                            style={{ display: 'block', maxHeight: '80px', width: 'auto' }}
+                                                        />
                                                         <div>
                                                             <h1 className="text-xl font-bold text-gray-900">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
                                                             <p className="text-sm text-gray-600 mt-1">Motor Parts & Accessories</p>
