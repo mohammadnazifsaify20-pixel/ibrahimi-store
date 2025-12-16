@@ -30,10 +30,10 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
     if (!customer) return <div>Customer not found</div>;
 
     return (
-        <div className="min-h-screen bg-white text-black p-4 flex items-start justify-center">
+        <div className="min-h-screen bg-white text-black p-4 flex items-start justify-center print:p-0 print:m-0">
             {/* ID Card Container */}
             <div
-                className="border-2 border-black rounded-xl p-4 w-[85.6mm] h-[53.98mm] relative overflow-hidden flex flex-col justify-between"
+                className="border-2 border-black rounded-xl p-4 w-[85.6mm] h-[53.98mm] relative overflow-hidden flex flex-col justify-between bg-white"
                 style={{ breakInside: 'avoid' }}
             >
                 {/* Background Logo Watermark */}
