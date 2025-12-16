@@ -359,7 +359,7 @@ export default function SalesPage() {
                                         <>
                                             {/* Header */}
                                             <div className="flex justify-between items-start mb-6">
-                                                <div>
+                                                <div className="flex-1">
                                                     <Dialog.Title as="h2" className="text-3xl font-bold text-gray-900">
                                                         Invoice {selectedInvoice.invoiceNumber}
                                                     </Dialog.Title>
@@ -367,13 +367,16 @@ export default function SalesPage() {
                                                         Date: {new Date(selectedInvoice.date).toLocaleString()}
                                                     </p>
                                                 </div>
-                                                <button
-                                                    onClick={() => setIsViewModalOpen(false)}
-                                                    className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
-                                                >
-                                                    {/* @ts-ignore */}
-                                                    <X size={24} />
-                                                </button>
+                                                <div className="flex items-center gap-4">
+                                                    <img src="/logo.png" alt="Company Logo" className="h-16 w-auto" />
+                                                    <button
+                                                        onClick={() => setIsViewModalOpen(false)}
+                                                        className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
+                                                    >
+                                                        {/* @ts-ignore */}
+                                                        <X size={24} />
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Customer Info */}

@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 sidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 <div className="h-16 flex items-center px-6 border-b">
-                    <span className="text-lg font-bold text-blue-600 leading-tight">IBRAHIMI & BROS</span>
+                    <img src="/logo.png" alt="IBRAHIMI & BROS Logo" className="h-12 w-auto" />
                 </div>
 
                 <nav className="p-4 space-y-1">
@@ -198,7 +198,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     <span className="text-sm font-bold md:hidden truncate max-w-[150px]">IBRAHIMI STORE</span>
-                    <div className="w-8" /> {/* Spacer */}
+                    
+                    {/* Logo on top right */}
+                    <div className="flex items-center">
+                        <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
+                    </div>
                 </header>
 
                 <div className="flex-1 overflow-auto p-6 md:p-10 lg:p-12">
