@@ -96,14 +96,8 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                         height: 53.98mm !important;
                         overflow: hidden !important;
                     }
-                    body * {
-                        visibility: hidden !important;
-                    }
-                    #card-wrapper,
-                    #card-wrapper *,
-                    #printable-card,
-                    #printable-card * {
-                        visibility: visible !important;
+                    body > div:not(#card-wrapper) {
+                        display: none !important;
                     }
                     #card-wrapper {
                         position: fixed !important;
@@ -125,10 +119,20 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                     #printable-card {
                         page-break-inside: avoid !important;
                         break-inside: avoid !important;
+                        display: flex !important;
                     }
-                    .print-card img {
+                    #printable-card * {
                         display: block !important;
-                        visibility: visible !important;
+                    }
+                    #printable-card p,
+                    #printable-card h1,
+                    #printable-card h2,
+                    #printable-card div {
+                        color: black !important;
+                        opacity: 1 !important;
+                    }
+                    #printable-card img {
+                        display: block !important;
                     }
                 }
             `}</style>
