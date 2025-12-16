@@ -553,13 +553,19 @@ export default function SalesPage() {
                                             * {
                                                 -webkit-print-color-adjust: exact !important;
                                                 print-color-adjust: exact !important;
+                                                color-adjust: exact !important;
                                             }
                                             body * {
                                                 visibility: hidden;
                                             }
                                             #invoice-modal,
-                                            #invoice-modal * {
-                                                visibility: visible;
+                                            #invoice-modal *,
+                                            #invoice-watermark,
+                                            #invoice-watermark *,
+                                            #invoice-content,
+                                            #invoice-content *,
+                                            #invoice-logo {
+                                                visibility: visible !important;
                                             }
                                             #invoice-modal {
                                                 position: absolute;
@@ -569,14 +575,18 @@ export default function SalesPage() {
                                                 max-width: 100% !important;
                                                 box-shadow: none !important;
                                                 border-radius: 0 !important;
-                                                padding: 0 !important;
+                                                padding: 20px !important;
                                             }
                                             #invoice-watermark {
                                                 opacity: 0.05 !important;
                                             }
+                                            #invoice-watermark img {
+                                                display: block !important;
+                                            }
                                             #invoice-logo {
                                                 display: block !important;
                                                 max-height: 80px !important;
+                                                width: auto !important;
                                             }
                                         }
                                     `}</style>

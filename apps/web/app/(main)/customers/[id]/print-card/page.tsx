@@ -31,11 +31,11 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
 
     return (
         <>
-        <div className="min-h-screen bg-white text-black p-4 flex items-center justify-center">
+        <div className="min-h-screen bg-white text-black p-4 flex items-center justify-center" id="card-wrapper">
             {/* ID Card Container */}
             <div
                 id="printable-card"
-                className="border-2 border-black rounded-xl p-4 w-[85.6mm] h-[53.98mm] relative overflow-hidden flex flex-col justify-between bg-white"
+                className="border-2 border-black rounded-xl p-4 w-[85.6mm] h-[53.98mm] relative overflow-hidden flex flex-col justify-between bg-white print-card"
                 style={{ breakInside: 'avoid' }}
             >
                 {/* Background Logo Watermark */}
@@ -86,22 +86,30 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                     * {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
+                        color-adjust: exact !important;
                     }
                     html, body {
-                        margin: 0;
-                        padding: 0;
-                        width: 85.6mm;
-                        height: 53.98mm;
-                        overflow: hidden;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 85.6mm !important;
+                        height: 53.98mm !important;
+                        overflow: hidden !important;
                     }
-                    body > div:first-child {
-                        min-height: auto !important;
-                        height: 53.98mm;
+                    #card-wrapper {
+                        min-height: 53.98mm !important;
+                        height: 53.98mm !important;
                         padding: 0 !important;
                         margin: 0 !important;
                         display: flex !important;
                         align-items: center !important;
                         justify-content: center !important;
+                    }
+                    .print-card, .print-card * {
+                        visibility: visible !important;
+                        display: flex !important;
+                    }
+                    .print-card img {
+                        display: block !important;
                     }
                 }
             `}</style>
