@@ -119,8 +119,8 @@ router.post('/import', authenticate, authorize([Role.ADMIN, Role.MANAGER]), uplo
         const errors: any[] = [];
         let rowCount = 0;
 
-        const stream = Readable.from(req.file.buffer)
-            .pipe(csvParser({ encoding: 'utf8' }))
+        const stream = Readable.from(req.file.buffer.toString('utf8'))
+            .pipe(csvParser())
             .on('data', (data) => {
                 rowCount++;
 
@@ -390,8 +390,8 @@ router.post('/import', authenticate, authorize([Role.ADMIN, Role.MANAGER]), uplo
         const errors: any[] = [];
         let rowCount = 0;
 
-        const stream = Readable.from(req.file.buffer)
-            .pipe(csvParser({ encoding: 'utf8' }))
+        const stream = Readable.from(req.file.buffer.toString('utf8'))
+            .pipe(csvParser())
             .on('data', (data) => {
                 rowCount++;
 
