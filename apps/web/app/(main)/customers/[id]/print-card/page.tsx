@@ -15,6 +15,7 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
     const fetchCustomer = async () => {
         try {
             const res = await api.get(`/customers/${params.id}`);
+            console.log('Customer data:', res.data);
             setCustomer(res.data);
             setTimeout(() => {
                 window.print();
@@ -66,7 +67,7 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                         </div>
                         <div className="text-right">
                             <p className="text-[10px] uppercase text-gray-600 font-bold mb-0.5">Customer ID</p>
-                            <p className="font-mono font-black text-lg">{customer.displayId || customer.id}</p>
+                            <p className="font-mono font-black text-lg">{customer.displayId || `EQ${String(customer.id).padStart(6, '0')}`}</p>
                         </div>
                     </div>
                 </div>
