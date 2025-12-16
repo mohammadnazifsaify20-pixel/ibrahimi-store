@@ -78,24 +78,12 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
             <style jsx global>{`
                 @media print {
                     @page {
-                        size: auto;
+                        size: 85.6mm 53.98mm;
                         margin: 0;
                     }
-                    body * {
-                        visibility: hidden;
-                    }
-                    .min-h-screen, .min-h-screen * {
-                        visibility: visible;
-                    }
-                    .min-h-screen {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                        height: 100%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
+                    body {
+                        margin: 0;
+                        padding: 0;
                     }
                 }
             `}</style>

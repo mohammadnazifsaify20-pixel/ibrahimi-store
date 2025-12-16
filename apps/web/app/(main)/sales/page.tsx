@@ -362,7 +362,27 @@ export default function SalesPage() {
                                         </div>
                                     ) : selectedInvoice ? (
                                         <>
-                                            {/* Header */}
+                                            {/* Company Header with Logo */}
+                                            <div className="border-b-2 pb-4 mb-6">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <img src="/logo.png" alt="Company Logo" className="h-20 w-auto" />
+                                                        <div>
+                                                            <h1 className="text-xl font-bold text-gray-900">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
+                                                            <p className="text-sm text-gray-600 mt-1">Motor Parts & Accessories</p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setIsViewModalOpen(false)}
+                                                        className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
+                                                    >
+                                                        {/* @ts-ignore */}
+                                                        <X size={24} />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Invoice Header */}
                                             <div className="flex justify-between items-start mb-6">
                                                 <div className="flex-1">
                                                     <Dialog.Title as="h2" className="text-3xl font-bold text-gray-900">
@@ -371,16 +391,6 @@ export default function SalesPage() {
                                                     <p className="text-sm text-gray-500 mt-1">
                                                         Date: {new Date(selectedInvoice.date).toLocaleString()}
                                                     </p>
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    <img src="/logo.png" alt="Company Logo" className="h-16 w-auto" />
-                                                    <button
-                                                        onClick={() => setIsViewModalOpen(false)}
-                                                        className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
-                                                    >
-                                                        {/* @ts-ignore */}
-                                                        <X size={24} />
-                                                    </button>
                                                 </div>
                                             </div>
 
