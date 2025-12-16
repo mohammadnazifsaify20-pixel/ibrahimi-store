@@ -119,7 +119,13 @@ router.post('/import', authenticate, authorize([Role.ADMIN, Role.MANAGER]), uplo
         const errors: any[] = [];
         let rowCount = 0;
 
-        const stream = Readable.from(req.file.buffer.toString('utf8'))
+        // Remove BOM if present and convert to UTF-8
+        let csvContent = req.file.buffer.toString('utf8');
+        if (csvContent.charCodeAt(0) === 0xFEFF) {
+            csvContent = csvContent.slice(1);
+        }
+
+        const stream = Readable.from(csvContent)
             .pipe(csvParser())
             .on('data', (data) => {
                 rowCount++;
@@ -390,7 +396,13 @@ router.post('/import', authenticate, authorize([Role.ADMIN, Role.MANAGER]), uplo
         const errors: any[] = [];
         let rowCount = 0;
 
-        const stream = Readable.from(req.file.buffer.toString('utf8'))
+        // Remove BOM if present and convert to UTF-8
+        let csvContent = req.file.buffer.toString('utf8');
+        if (csvContent.charCodeAt(0) === 0xFEFF) {
+            csvContent = csvContent.slice(1);
+        }
+
+        const stream = Readable.from(csvContent)
             .pipe(csvParser())
             .on('data', (data) => {
                 rowCount++;
