@@ -546,26 +546,37 @@ export default function SalesPage() {
                                     
                                     <style jsx global>{`
                                         @media print {
+                                            @page {
+                                                size: A4;
+                                                margin: 1cm;
+                                            }
                                             * {
                                                 -webkit-print-color-adjust: exact !important;
                                                 print-color-adjust: exact !important;
                                             }
-                                            body > *:not(#headlessui-portal-root) {
-                                                display: none !important;
+                                            body * {
+                                                visibility: hidden;
                                             }
-                                            #headlessui-portal-root {
-                                                position: static !important;
+                                            #invoice-modal,
+                                            #invoice-modal * {
+                                                visibility: visible;
                                             }
                                             #invoice-modal {
+                                                position: absolute;
+                                                left: 0;
+                                                top: 0;
+                                                width: 100%;
                                                 max-width: 100% !important;
                                                 box-shadow: none !important;
                                                 border-radius: 0 !important;
+                                                padding: 0 !important;
                                             }
                                             #invoice-watermark {
                                                 opacity: 0.05 !important;
                                             }
                                             #invoice-logo {
                                                 display: block !important;
+                                                max-height: 80px !important;
                                             }
                                         }
                                     `}</style>

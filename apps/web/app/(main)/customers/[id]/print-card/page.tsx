@@ -87,18 +87,21 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
-                    body {
+                    html, body {
                         margin: 0;
                         padding: 0;
+                        width: 85.6mm;
+                        height: 53.98mm;
+                        overflow: hidden;
                     }
-                    body > * {
-                        display: none !important;
-                    }
-                    #printable-card {
+                    body > div:first-child {
+                        min-height: auto !important;
+                        height: 53.98mm;
+                        padding: 0 !important;
+                        margin: 0 !important;
                         display: flex !important;
-                        position: absolute;
-                        left: 0;
-                        top: 0;
+                        align-items: center !important;
+                        justify-content: center !important;
                     }
                 }
             `}</style>
