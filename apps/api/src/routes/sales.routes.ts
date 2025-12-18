@@ -262,24 +262,37 @@ router.post('/sales', authenticate, async (req: AuthRequest, res: Response) => {
 
 // Helper to verify admin password
 const verifyAdminPassword = async (providedPassword: string, currentUser: any) => {
-    if (!providedPassword) return false;
+    try {
+        if (!providedPassword) {
+            console.log('No password provided');
+            return false;
+        }
 
-    // Use current user if they are admin, otherwise find a global admin
-    let targetAdmin = null;
+        // Use current user if they are admin, otherwise find a global admin
+        let targetAdmin = null;
 
-    if (currentUser.role === Role.ADMIN) {
-        // We need to fetch the full user to get the password hash (req.user might be partial from token)
-        targetAdmin = await prisma.user.findUnique({ where: { id: currentUser.id } });
-    } else {
-        // Find any admin to act as "Master Key" verifier
-        targetAdmin = await prisma.user.findFirst({ where: { role: Role.ADMIN } });
+        if (currentUser && currentUser.role === Role.ADMIN) {
+            // We need to fetch the full user to get the password hash (req.user might be partial from token)
+            targetAdmin = await prisma.user.findUnique({ where: { id: currentUser.id } });
+        } else {
+            // Find any admin to act as "Master Key" verifier
+            targetAdmin = await prisma.user.findFirst({ where: { role: Role.ADMIN } });
+        }
+
+        if (!targetAdmin) {
+            console.log('No admin user found');
+            return false;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const bcrypt = require('bcryptjs');
+        const isMatch = await bcrypt.compare(providedPassword, targetAdmin.password);
+        console.log('Password verification result:', isMatch);
+        return isMatch;
+    } catch (error) {
+        console.error('Error in verifyAdminPassword:', error);
+        return false;
     }
-
-    if (!targetAdmin) return false;
-
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const bcrypt = require('bcryptjs'); // dyn import to avoid top-level issues if any
-    return await bcrypt.compare(providedPassword, targetAdmin.password);
 };
 
 // Delete a Sale (Admin Key Required)
