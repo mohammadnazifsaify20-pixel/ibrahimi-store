@@ -93,10 +93,9 @@ export default function DebtorsPage() {
     const [showBalanceModal, setShowBalanceModal] = useState(false);
     const [adminPassword, setAdminPassword] = useState('');
     const [newBalance, setNewBalance] = useState('');
+    const [balanceDescription, setBalanceDescription] = useState('');
     const [balanceError, setBalanceError] = useState('');
     const [balanceLoading, setBalanceLoading] = useState(false);
-    
-    const ADMIN_PASSWORD = 'ibrahimi2024'; // Store this securely in production
     
     const fetchShopBalance = async () => {
         try {
@@ -111,11 +110,6 @@ export default function DebtorsPage() {
     const handleUpdateBalance = async () => {
         if (!adminPassword || !newBalance) {
             setBalanceError('Please enter admin password and balance amount');
-            return;
-        }
-        
-        if (adminPassword !== ADMIN_PASSWORD) {
-            setBalanceError('Invalid admin password');
             return;
         }
         
@@ -1281,6 +1275,7 @@ export default function DebtorsPage() {
                                     setShowBalanceModal(false);
                                     setAdminPassword('');
                                     setNewBalance('');
+                                    setBalanceDescription('');
                                     setBalanceError('');
                                 }}
                                 className="text-gray-400 hover:text-gray-600"
@@ -1309,8 +1304,11 @@ export default function DebtorsPage() {
                                 value={adminPassword}
                                 onChange={(e) => setAdminPassword(e.target.value)}
                                 className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                                placeholder="Enter admin password"
+                                placeholder="Enter admin password (default: ibrahimi2024)"
                             />
+                            <p className="text-xs text-gray-500 mt-1">
+                                💡 To change password, contact system administrator
+                            </p>
                         </div>
 
                         <div>
@@ -1333,10 +1331,28 @@ export default function DebtorsPage() {
                             </p>
                         </div>
 
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                            <p className="text-xs text-yellow-800">
-                                ⚠️ <strong>Important:</strong> This balance will be deducted automatically when you lend money to customers.
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Description (Optional)
+                            </label>
+                            <input
+                                type="text"
+                                value={balanceDescription}
+                                onChange={(e) => setBalanceDescription(e.target.value)}
+                                className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                placeholder="Why are you updating the balance?"
+                            />
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-xs text-blue-800 font-medium mb-1">
+                                ℹ️ <strong>Auto Balance Management:</strong>
                             </p>
+                            <ul className="text-xs text-blue-700 space-y-1 ml-4">
+                                <li>✓ Increases when you sell products (+)</li>
+                                <li>✓ Decreases when you add expenses (-)</li>
+                                <li>✓ Decreases when you lend money (-)</li>
+                            </ul>
                         </div>
 
                         <div className="flex gap-3 pt-4">
@@ -1345,6 +1361,7 @@ export default function DebtorsPage() {
                                     setShowBalanceModal(false);
                                     setAdminPassword('');
                                     setNewBalance('');
+                                    setBalanceDescription('');
                                     setBalanceError('');
                                 }}
                                 className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"

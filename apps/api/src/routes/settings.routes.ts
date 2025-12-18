@@ -95,14 +95,119 @@ router.get('/shop-balance', async (req: Request, res: Response) => {
     }
 });
 
-// Update Shop Balance
+// Validate Admin Password
+router.post('/validate-admin-password', async (req: Request, res: Response) => {
+    try {
+        const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({ message: 'Password is required', valid: false });
+        }
+
+        const setting = await prisma.systemSetting.findUnique({
+            where: { key: 'admin_balance_password' }
+        });
+
+        // Default password if not set
+        const adminPassword = setting ? setting.value : 'ibrahimi2024';
+
+        if (password === adminPassword) {
+            res.json({ valid: true, message: 'Password verified' });
+        } else {
+            res.status(401).json({ valid: false, message: 'Invalid password' });
+        }
+    } catch (error) {
+        console.error('Failed to validate password:', error);
+        res.status(500).json({ message: 'Internal server error', valid: false });
+    }
+});
+
+// Update Admin Password
+router.post('/admin-balance-password', async (req: Request, res: Response) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Both current and new passwords are required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters' });
+        }
+
+        const setting = await prisma.systemSetting.findUnique({
+            where: { key: 'admin_balance_password' }
+        });
+
+        const currentAdminPassword = setting ? setting.value : 'ibrahimi2024';
+
+        if (currentPassword !== currentAdminPassword) {
+            return res.status(401).json({ message: 'Current password is incorrect' });
+        }
+
+        await prisma.systemSetting.upsert({
+            where: { key: 'admin_balance_password' },
+            update: { value: newPassword },
+            create: {
+                key: 'admin_balance_password',
+                value: newPassword,
+                description: 'Admin Password for Shop Balance Management'
+            }
+        });
+
+        res.json({ message: 'Admin password updated successfully' });
+    } catch (error) {
+        console.error('Failed to update admin password:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Helper function to log balance transactions
+async function logBalanceTransaction(type: string, amount: number, description: string, referenceId?: string) {
+    try {
+        await prisma.systemSetting.create({
+            data: {
+                key: `balance_log_${Date.now()}`,
+                value: JSON.stringify({
+                    type, // 'SALE', 'EXPENSE', 'LENDING', 'MANUAL'
+                    amount,
+                    description,
+                    referenceId,
+                    timestamp: new Date().toISOString()
+                }),
+                description: `Balance Transaction: ${type}`
+            }
+        });
+    } catch (error) {
+        console.error('Failed to log balance transaction:', error);
+    }
+}
+
+// Update Shop Balance with transaction logging
 router.post('/shop-balance', async (req: Request, res: Response) => {
     try {
-        const { balance } = req.body;
+        const { balance, password, description } = req.body;
 
         if (balance === undefined || isNaN(balance) || balance < 0) {
             return res.status(400).json({ message: 'Invalid balance amount' });
         }
+
+        // Validate admin password if provided
+        if (password) {
+            const passwordSetting = await prisma.systemSetting.findUnique({
+                where: { key: 'admin_balance_password' }
+            });
+            const adminPassword = passwordSetting ? passwordSetting.value : 'ibrahimi2024';
+            
+            if (password !== adminPassword) {
+                return res.status(401).json({ message: 'Invalid admin password' });
+            }
+        }
+
+        const currentBalance = await prisma.systemSetting.findUnique({
+            where: { key: 'shop_balance' }
+        });
+        const oldBalance = currentBalance ? parseFloat(currentBalance.value) : 0;
 
         const setting = await prisma.systemSetting.upsert({
             where: { key: 'shop_balance' },
@@ -114,11 +219,47 @@ router.post('/shop-balance', async (req: Request, res: Response) => {
             }
         });
 
+        // Log the transaction
+        await logBalanceTransaction(
+            'MANUAL',
+            balance - oldBalance,
+            description || `Manual balance update from ؋${oldBalance.toLocaleString()} to ؋${balance.toLocaleString()}`
+        );
+
         res.json({ message: 'Shop balance updated', balance: parseFloat(setting.value) });
     } catch (error) {
         console.error('Failed to update shop balance:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+// Get Balance Transaction History
+router.get('/balance-history', async (req: Request, res: Response) => {
+    try {
+        const logs = await prisma.systemSetting.findMany({
+            where: {
+                key: { startsWith: 'balance_log_' }
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: 100 // Last 100 transactions
+        });
+
+        const transactions = logs.map(log => {
+            try {
+                return JSON.parse(log.value);
+            } catch {
+                return null;
+            }
+        }).filter(t => t !== null);
+
+        res.json({ transactions });
+    } catch (error) {
+        console.error('Failed to fetch balance history:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Export helper function for use in other routes
+export { logBalanceTransaction };
 
 export default router;

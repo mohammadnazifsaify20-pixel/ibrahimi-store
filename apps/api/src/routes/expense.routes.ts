@@ -60,6 +60,43 @@ router.post('/', authenticate, async (req, res) => {
             }
         });
 
+        // Update Shop Balance - Deduct expense amount from balance
+        try {
+            const balanceSetting = await prisma.systemSetting.findUnique({
+                where: { key: 'shop_balance' }
+            });
+            const currentBalance = balanceSetting ? parseFloat(balanceSetting.value) : 0;
+            const newBalance = currentBalance - data.amount;
+
+            await prisma.systemSetting.upsert({
+                where: { key: 'shop_balance' },
+                update: { value: String(newBalance) },
+                create: {
+                    key: 'shop_balance',
+                    value: String(newBalance),
+                    description: 'Shop Cash Balance (AFN)'
+                }
+            });
+
+            // Log the transaction
+            await prisma.systemSetting.create({
+                data: {
+                    key: `balance_log_${Date.now()}`,
+                    value: JSON.stringify({
+                        type: 'EXPENSE',
+                        amount: -data.amount,
+                        description: `Expense: ${data.description} (${data.category})`,
+                        referenceId: String(expense.id),
+                        timestamp: new Date().toISOString()
+                    }),
+                    description: 'Balance Transaction: EXPENSE'
+                }
+            });
+        } catch (error) {
+            console.error('Failed to update shop balance after expense:', error);
+            // Don't fail the expense if balance update fails
+        }
+
         res.status(201).json(expense);
     } catch (error) {
         if (error instanceof ZodError) {

@@ -226,6 +226,46 @@ router.post('/sales', authenticate, async (req: AuthRequest, res: Response) => {
         // Log Sale Creation
         await logAction(userId, 'CREATE_SALE', 'Invoice', result.id, { invoiceNumber: result.invoiceNumber, total: result.total });
 
+        // Update Shop Balance - Add paid amount to balance
+        if (paidAmount > 0) {
+            try {
+                const balanceSetting = await prisma.systemSetting.findUnique({
+                    where: { key: 'shop_balance' }
+                });
+                const currentBalance = balanceSetting ? parseFloat(balanceSetting.value) : 0;
+                const paidAmountAFN = Number(paidAmount) * Number(exchangeRate);
+                const newBalance = currentBalance + paidAmountAFN;
+
+                await prisma.systemSetting.upsert({
+                    where: { key: 'shop_balance' },
+                    update: { value: String(newBalance) },
+                    create: {
+                        key: 'shop_balance',
+                        value: String(newBalance),
+                        description: 'Shop Cash Balance (AFN)'
+                    }
+                });
+
+                // Log the transaction
+                await prisma.systemSetting.create({
+                    data: {
+                        key: `balance_log_${Date.now()}`,
+                        value: JSON.stringify({
+                            type: 'SALE',
+                            amount: paidAmountAFN,
+                            description: `Sale #${result.invoiceNumber} - Payment received`,
+                            referenceId: result.id,
+                            timestamp: new Date().toISOString()
+                        }),
+                        description: 'Balance Transaction: SALE'
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to update shop balance after sale:', error);
+                // Don't fail the sale if balance update fails
+            }
+        }
+
         // Send Invoice Email (Fire and forget)
         if (result.customerId) {
             // Fetch fresh customer data to get email (result might only have ID depending on prisma return)
