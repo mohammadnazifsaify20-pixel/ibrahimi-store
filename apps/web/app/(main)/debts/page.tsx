@@ -53,7 +53,7 @@ interface Summary {
 }
 
 export default function DebtorsPage() {
-    const { exchangeRate, fetchExchangeRate } = useSettingsStore();
+    const { exchangeRate = 70, fetchExchangeRate } = useSettingsStore();
     const [debts, setDebts] = useState<Debt[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -264,7 +264,9 @@ export default function DebtorsPage() {
     
     useEffect(() => {
         fetchCustomers();
-        fetchExchangeRate();
+        fetchExchangeRate().catch(err => {
+            console.error('Failed to fetch exchange rate, using default:', err);
+        });
     }, []);
     
 
