@@ -526,4 +526,72 @@ router.post('/sales/:id/return', authenticate, async (req: AuthRequest, res: Res
     }
 });
 
+// DELETE ALL Sales History (Admin Key Required - Nuclear Option)
+router.post('/delete-all', authenticate, authorize([Role.ADMIN]), async (req: AuthRequest, res: Response) => {
+    try {
+        const { adminPassword } = req.body;
+
+        // STRICT VERIFICATION
+        const isAuthorized = await verifyAdminPassword(adminPassword, req.user);
+        if (!isAuthorized) {
+            return res.status(403).json({ message: 'Invalid Admin Key. Cannot delete all sales history.' });
+        }
+
+        // Delete ALL sales data (NUCLEAR OPTION)
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Get all invoices for stock restoration
+            const allInvoices = await tx.invoice.findMany({
+                include: { items: true }
+            });
+
+            // 2. Restore stock for all items
+            for (const invoice of allInvoices) {
+                for (const item of invoice.items) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { quantityOnHand: { increment: item.quantity } }
+                    });
+                }
+            }
+
+            // 3. Reset all customer outstanding balances to 0
+            await tx.customer.updateMany({
+                data: { 
+                    outstandingBalance: 0,
+                    outstandingBalanceAFN: 0
+                }
+            });
+
+            // 4. Delete all related data
+            await tx.invoiceItem.deleteMany({});
+            await tx.payment.deleteMany({});
+            await tx.creditEntry.deleteMany({});
+            await tx.debtPayment.deleteMany({});
+
+            // 5. Delete all invoices
+            const deletedCount = await tx.invoice.deleteMany({});
+
+            return { deletedCount: deletedCount.count, invoicesProcessed: allInvoices.length };
+        });
+
+        // Log the nuclear action
+        await logAction(
+            req.user?.id || 0, 
+            'DELETE_ALL_SALES', 
+            'Invoice', 
+            'ALL', 
+            { deletedCount: result.deletedCount }
+        );
+
+        res.json({ 
+            message: `Successfully deleted ALL sales history (${result.deletedCount} invoices). Stock restored, customer balances reset.`,
+            deletedCount: result.deletedCount
+        });
+
+    } catch (error: any) {
+        console.error('Delete All Sales Error:', error);
+        res.status(500).json({ message: error.message || 'Failed to delete all sales history' });
+    }
+});
+
 export default router;

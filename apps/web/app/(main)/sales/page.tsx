@@ -42,6 +42,12 @@ export default function SalesPage() {
     // Bulk Delete State
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
+    // Delete All State
+    const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+    const [deleteAllPassword, setDeleteAllPassword] = useState('');
+    const [deleteAllLoading, setDeleteAllLoading] = useState(false);
+    const [deleteAllError, setDeleteAllError] = useState('');
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
             setSelectedIds(new Set(filteredSales.map(s => s.id)));
@@ -120,6 +126,38 @@ export default function SalesPage() {
         }
     };
 
+    const handleDeleteAllClick = () => {
+        setDeleteAllPassword('');
+        setDeleteAllError('');
+        setShowDeleteAllModal(true);
+    };
+
+    const confirmDeleteAll = async () => {
+        if (!deleteAllPassword.trim()) {
+            setDeleteAllError('Admin password is required');
+            return;
+        }
+
+        setDeleteAllLoading(true);
+        setDeleteAllError('');
+
+        try {
+            await api.post('/sales/delete-all', {
+                adminPassword: deleteAllPassword
+            });
+
+            // Success - refresh sales list
+            setShowDeleteAllModal(false);
+            setDeleteAllPassword('');
+            fetchSales();
+        } catch (err: any) {
+            console.error('Delete all failed', err);
+            setDeleteAllError(err.response?.data?.message || 'Failed to delete all sales');
+        } finally {
+            setDeleteAllLoading(false);
+        }
+    };
+
     const filteredSales = sales.filter(s =>
         s.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
         s.customer?.name.toLowerCase().includes(search.toLowerCase())
@@ -130,6 +168,17 @@ export default function SalesPage() {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-900">Sales History</h1>
                 <div className="flex items-center gap-4">
+                    {sales.length > 0 && (
+                        <button
+                            onClick={handleDeleteAllClick}
+                            className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition font-bold shadow-sm flex items-center gap-2"
+                            title="Delete ALL sales history (Admin only)"
+                        >
+                            {/* @ts-ignore */}
+                            <AlertTriangle size={18} />
+                            Delete All History
+                        </button>
+                    )}
                     {selectedIds.size > 0 && (
                         <button
                             onClick={handleBulkDeleteClick}
@@ -605,6 +654,119 @@ export default function SalesPage() {
                                             }
                                         }
                                     `}</style>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
+
+            {/* Delete All Sales History Modal */}
+            <Transition appear show={showDeleteAllModal} as={Fragment}>
+                <Dialog as="div" className="relative z-50" onClose={() => setShowDeleteAllModal(false)}>
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="fixed inset-0 bg-black/50" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-95"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                                    <Dialog.Title as="h3" className="text-lg font-bold text-red-900 flex items-center gap-2">
+                                        {/* @ts-ignore */}
+                                        <AlertTriangle className="text-red-600" size={24} />
+                                        ⚠️ DELETE ALL SALES HISTORY
+                                    </Dialog.Title>
+
+                                    <div className="mt-4 space-y-4">
+                                        <div className="bg-red-50 border-2 border-red-500 p-4 rounded-lg">
+                                            <p className="text-sm font-bold text-red-900 mb-2">
+                                                CRITICAL WARNING: This action will:
+                                            </p>
+                                            <ul className="text-xs text-red-800 list-disc list-inside space-y-1">
+                                                <li>Delete ALL {sales.length} sales records permanently</li>
+                                                <li>Restore stock for ALL sold items</li>
+                                                <li>Reset ALL customer outstanding balances to zero</li>
+                                                <li>Delete ALL payment and credit history</li>
+                                                <li><strong>THIS CANNOT BE UNDONE!</strong></li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg">
+                                            <p className="text-xs text-yellow-800">
+                                                ⚠️ Only use this if you want to completely reset your sales data (e.g., after testing or year-end cleanup). All financial records will be lost forever.
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-red-100 border border-red-200 p-4 rounded-lg">
+                                            <label className="block text-sm font-bold text-red-900 mb-2">
+                                                Admin Password Required
+                                            </label>
+                                            <div className="relative">
+                                                {/* @ts-ignore */}
+                                                <Lock className="absolute left-3 top-2.5 text-red-400" size={16} />
+                                                <input
+                                                    type="password"
+                                                    value={deleteAllPassword}
+                                                    onChange={(e) => setDeleteAllPassword(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') confirmDeleteAll();
+                                                    }}
+                                                    className="w-full pl-9 pr-3 py-2 border-2 border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                                                    placeholder="Enter Admin Password to Confirm"
+                                                    autoFocus
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {deleteAllError && (
+                                            <p className="text-xs text-red-600 font-bold bg-red-50 p-2 rounded">{deleteAllError}</p>
+                                        )}
+
+                                        <div className="flex gap-3 justify-end pt-2">
+                                            <button
+                                                onClick={() => setShowDeleteAllModal(false)}
+                                                className="px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg"
+                                                disabled={deleteAllLoading}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={confirmDeleteAll}
+                                                disabled={deleteAllLoading || !deleteAllPassword}
+                                                className="px-4 py-2 bg-red-700 text-white font-bold rounded-lg hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            >
+                                                {deleteAllLoading ? (
+                                                    <>
+                                                        <span className="animate-spin">⏳</span>
+                                                        Deleting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {/* @ts-ignore */}
+                                                        <Trash2 size={16} />
+                                                        Delete ALL Sales Forever
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </Dialog.Panel>
                             </Transition.Child>
                         </div>
