@@ -502,7 +502,10 @@ export default function DebtorsPage() {
                                                             <button
                                                                 onClick={() => {
                                                                     setSelectedDebt(debt);
-                                                                    setNewDueDate(new Date(debt.dueDate).toISOString().split('T')[0]);
+                                                                    const currentDate = debt.dueDate 
+                                                                        ? new Date(debt.dueDate).toISOString().split('T')[0]
+                                                                        : new Date().toISOString().split('T')[0];
+                                                                    setNewDueDate(currentDate);
                                                                     setShowDueDateModal(true);
                                                                 }}
                                                                 className="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
