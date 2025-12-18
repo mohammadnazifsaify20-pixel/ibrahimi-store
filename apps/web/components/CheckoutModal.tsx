@@ -53,7 +53,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
     // If user pays in AFG, we convert to USD to track against finalTotalUSD
     const paidAmountUSD = paidAmountAFG ? (Number(paidAmountAFG) / Number(exchangeRate)) : 0;
 
-    const [customerId, setCustomerId] = useState<string>('');
+    const [customerId, setCustomerId] = useState<number | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
     const [customers, setCustomers] = useState<any[]>([]);
     const [customerSearch, setCustomerSearch] = useState('');
@@ -89,7 +89,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
 
     const handleSelectCustomer = (customer: any) => {
         setSelectedCustomer(customer);
-        setCustomerId(String(customer.id));
+        setCustomerId(customer.id);
         setCustomerSearch('');
         setShowCustomerDropdown(false);
     };
@@ -185,7 +185,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
             }
 
             const saleData: any = {
-                customerId: customerId ? Number(customerId) : null,
+                customerId: customerId,
                 items: items.map((i: any) => ({
                     productId: i.id,
                     quantity: i.quantity,
@@ -518,7 +518,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                                                                 <button
                                                                     onClick={() => {
                                                                         setSelectedCustomer(null);
-                                                                        setCustomerId('');
+                                                                        setCustomerId(null);
                                                                         setCustomerSearch('');
                                                                     }}
                                                                     className="text-blue-500 hover:text-blue-700 p-1"
