@@ -696,6 +696,7 @@ export default function DebtorsPage() {
                                     setCustomerSearch('');
                                     setPaymentError('');
                                     setPaymentAmount('');
+                                    setPaymentNotes('');
                                 }}
                                 className="text-gray-400 hover:text-gray-600"
                             >
@@ -709,201 +710,169 @@ export default function DebtorsPage() {
                             </div>
                         )}
 
-                        {!selectedCustomer ? (
+                        <div className="space-y-4">
+                            {/* Customer Search */}
                             <div className="relative">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Search Customer
+                                    Search by Name or ID <span className="text-red-500">*</span>
                                 </label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                                    <input
-                                        type="text"
-                                        value={customerSearch}
-                                        onChange={(e) => setCustomerSearch(e.target.value)}
-                                        placeholder="Search by name or ID..."
-                                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    />
-                                </div>
                                 
-                                {customerSearch && (
-                                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                                        {filteredCustomers.length === 0 ? (
-                                            <div className="p-3 text-sm text-gray-500 text-center">No customers found</div>
-                                        ) : (
-                                            filteredCustomers.map(c => (
-                                                <button
-                                                    key={c.id}
-                                                    onClick={() => {
-                                                        setSelectedCustomer(c);
-                                                        setCustomerSearch('');
-                                                        // Check if customer has unpaid debts
-                                                        const customerDebts = debts?.filter(d => 
-                                                            d.customer.id === c.id && d.status !== 'SETTLED'
-                                                        ) || [];
-                                                        if (customerDebts.length === 1 && customerDebts[0]) {
-                                                            setSelectedDebt(customerDebts[0]);
-                                                            setPaymentAmount(Math.floor(Number(customerDebts[0].remainingBalanceAFN) || 0).toString());
-                                                        }
-                                                    }}
-                                                    className="w-full text-left px-4 py-2 hover:bg-blue-50 border-b last:border-b-0"
-                                                >
-                                                    <div className="font-bold text-gray-900">{c.name}</div>
-                                                    {c.displayId && <div className="text-xs text-gray-500 font-mono">{c.displayId}</div>}
-                                                    {c.phone && <div className="text-xs text-gray-500">{c.phone}</div>}
-                                                </button>
-                                            ))
-                                        )}
+                                {selectedCustomer ? (
+                                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                                        <div>
+                                            <p className="font-bold text-gray-900">{selectedCustomer.name}</p>
+                                            {selectedCustomer.displayId && <p className="text-xs font-mono text-gray-600">{selectedCustomer.displayId}</p>}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedCustomer(null);
+                                                setCustomerSearch('');
+                                                setSelectedDebt(null);
+                                            }}
+                                            className="text-blue-600 hover:text-blue-800"
+                                        >
+                                            <X size={18} />
+                                        </button>
                                     </div>
+                                ) : (
+                                    <>
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                value={customerSearch}
+                                                onChange={(e) => setCustomerSearch(e.target.value)}
+                                                placeholder="Search by name or ID..."
+                                                className="w-full pl-10 pr-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+                                        
+                                        {customerSearch && (
+                                            <div className="absolute z-50 w-full mt-1 bg-white border-2 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                                                {filteredCustomers.length === 0 ? (
+                                                    <div className="p-3 text-sm text-gray-500 text-center">No customers found</div>
+                                                ) : (
+                                                    filteredCustomers.map(c => (
+                                                        <button
+                                                            key={c.id}
+                                                            onClick={() => {
+                                                                setSelectedCustomer(c);
+                                                                setCustomerSearch('');
+                                                                // Check if customer has one unpaid debt and auto-select it
+                                                                const customerDebts = debts?.filter(d => 
+                                                                    d.customer.id === c.id && d.status !== 'SETTLED'
+                                                                ) || [];
+                                                                if (customerDebts.length === 1 && customerDebts[0]) {
+                                                                    setSelectedDebt(customerDebts[0]);
+                                                                    setPaymentAmount(Math.floor(Number(customerDebts[0].remainingBalanceAFN) || 0).toString());
+                                                                }
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-blue-50 border-b last:border-b-0"
+                                                        >
+                                                            <div className="font-bold text-gray-900">{c.name}</div>
+                                                            {c.displayId && <div className="text-xs text-gray-500 font-mono">{c.displayId}</div>}
+                                                            {c.phone && <div className="text-xs text-gray-500">{c.phone}</div>}
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
-                        ) : !selectedDebt ? (
+
+                            {/* Show debt info if customer has unpaid debts */}
+                            {selectedCustomer && debts?.filter(d => d.customer.id === selectedCustomer.id && d.status !== 'SETTLED').length > 0 && (
+                                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-3">
+                                    <p className="text-sm font-medium text-yellow-900 mb-2">Outstanding Debts:</p>
+                                    <div className="space-y-1">
+                                        {debts?.filter(d => d.customer.id === selectedCustomer.id && d.status !== 'SETTLED').map(debt => (
+                                            <div key={debt.id} className="flex justify-between items-center text-xs">
+                                                <span className="font-mono text-gray-700">{debt.invoice.invoiceNumber}</span>
+                                                <span className="font-bold text-red-600">؋{(Number(debt.remainingBalanceAFN) || 0).toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Amount Input */}
                             <div>
-                                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg mb-4">
-                                    <div>
-                                        <p className="font-bold text-gray-900">{selectedCustomer.name}</p>
-                                        {selectedCustomer.displayId && <p className="text-xs font-mono text-gray-600">{selectedCustomer.displayId}</p>}
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            setSelectedCustomer(null);
-                                            setCustomerSearch('');
-                                        }}
-                                        className="text-blue-600 hover:text-blue-800"
-                                    >
-                                        <X size={18} />
-                                    </button>
-                                </div>
-
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Select Debt to Pay
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Receiving Amount (AFN) <span className="text-red-500">*</span>
                                 </label>
-                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {debts?.filter(d => d.customer.id === selectedCustomer.id && d.status !== 'SETTLED').length === 0 ? (
-                                        <div className="text-center py-8 text-gray-500">
-                                            <AlertCircle size={48} className="mx-auto mb-3 text-gray-300" />
-                                            <p>No unpaid debts for this customer</p>
-                                        </div>
-                                    ) : (
-                                        debts
-                                            ?.filter(d => d.customer.id === selectedCustomer.id && d.status !== 'SETTLED')
-                                            .map(debt => (
-                                                <button
-                                                    key={debt.id}
-                                                    onClick={() => {
-                                                        setSelectedDebt(debt);
-                                                        setPaymentAmount(Math.floor(Number(debt.remainingBalanceAFN) || 0).toString());
-                                                    }}
-                                                    className="w-full text-left p-3 border-2 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                                                >
-                                                    <p className="text-sm font-mono text-gray-600">{debt.invoice.invoiceNumber}</p>
-                                                    <p className="text-xs text-gray-500">Due: {new Date(debt.dueDate).toLocaleDateString()}</p>
-                                                    <p className="text-lg font-bold text-red-600 mt-1">
-                                                        ؋{(Number(debt.remainingBalanceAFN) || 0).toLocaleString()}
-                                                    </p>
-                                                </button>
-                                            ))
-                                    )}
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                                    <div>
-                                        <p className="text-sm text-gray-600">Customer</p>
-                                        <p className="text-xl font-bold text-gray-900">{selectedDebt.customer.name}</p>
-                                        <p className="text-sm text-gray-600 font-mono mt-1">{selectedDebt.invoice.invoiceNumber}</p>
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            setSelectedDebt(null);
-                                            setPaymentAmount('');
-                                        }}
-                                        className="text-blue-600 hover:text-blue-800 font-medium"
-                                    >
-                                        ← Back
-                                    </button>
-                                </div>
-
-                                <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700 font-medium">Total Remaining Balance:</span>
-                                        <span className="text-3xl font-bold text-red-600">
-                                            ؋{selectedDebt.remainingBalanceAFN.toLocaleString()}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        USD: ${selectedDebt.remainingBalance.toFixed(2)}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Payment Amount (AFN) <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-3 text-gray-500 font-bold text-lg">؋</span>
-                                        <input
-                                            type="number"
-                                            step="1"
-                                            value={paymentAmount}
-                                            onChange={(e) => setPaymentAmount(e.target.value)}
-                                            max={selectedDebt.remainingBalanceAFN}
-                                            className="w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <p className="text-sm text-gray-600 mt-2">
-                                        USD Equivalent: ${(Number(paymentAmount) / (exchangeRate || 70)).toFixed(2)}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                                    <select
-                                        value={paymentMethod}
-                                        onChange={(e) => setPaymentMethod(e.target.value as any)}
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    >
-                                        <option value="CASH">Cash</option>
-                                        <option value="CARD">Card</option>
-                                        <option value="MOBILE_PAY">Mobile Pay</option>
-                                        <option value="BANK_TRANSFER">Bank Transfer</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                                    <textarea
-                                        value={paymentNotes}
-                                        onChange={(e) => setPaymentNotes(e.target.value)}
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                                        rows={2}
-                                        placeholder="Payment notes..."
+                                <div className="relative">
+                                    <span className="absolute left-3 top-3 text-gray-500 font-bold text-lg">؋</span>
+                                    <input
+                                        type="number"
+                                        step="1"
+                                        value={paymentAmount}
+                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold"
+                                        placeholder="Enter amount"
+                                        disabled={!selectedCustomer}
                                     />
                                 </div>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    USD: ${(Number(paymentAmount) / (exchangeRate || 70)).toFixed(2)}
+                                </p>
+                            </div>
 
-                                <div className="flex gap-3 pt-4">
-                                    <button
-                                        onClick={() => {
-                                            setShowPaymentModal(false);
-                                            setSelectedDebt(null);
-                                            setPaymentError('');
-                                            setPaymentAmount('');
-                                        }}
-                                        className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handlePayment}
-                                        disabled={paymentLoading || !paymentAmount}
-                                        className="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                                    >
-                                        {paymentLoading ? 'Processing...' : '✓ Receive Payment'}
-                                    </button>
-                                </div>
-                            </>
-                        )}
+                            {/* Notes */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Note
+                                </label>
+                                <textarea
+                                    value={paymentNotes}
+                                    onChange={(e) => setPaymentNotes(e.target.value)}
+                                    className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                    rows={3}
+                                    placeholder="Payment notes or details..."
+                                    disabled={!selectedCustomer}
+                                />
+                            </div>
+
+                            {/* Payment Date */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Payment Date <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    value={newDueDate || new Date().toISOString().split('T')[0]}
+                                    onChange={(e) => setNewDueDate(e.target.value)}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    disabled={!selectedCustomer}
+                                />
+                            </div>
+
+                            {/* Confirm Button */}
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={() => {
+                                        setShowPaymentModal(false);
+                                        setSelectedDebt(null);
+                                        setSelectedCustomer(null);
+                                        setCustomerSearch('');
+                                        setPaymentError('');
+                                        setPaymentAmount('');
+                                        setPaymentNotes('');
+                                    }}
+                                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handlePayment}
+                                    disabled={paymentLoading || !selectedCustomer || !paymentAmount}
+                                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                >
+                                    {paymentLoading ? 'Processing...' : '✓ Confirm Payment'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
