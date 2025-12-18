@@ -476,7 +476,7 @@ export default function DebtorsPage() {
         }
         
         if (!deletePassword) {
-            setDeleteError('Admin password is required');
+            setDeleteError('Your login password is required');
             return;
         }
         
@@ -495,7 +495,7 @@ export default function DebtorsPage() {
             await fetchShopBalance(); // Refresh balance as it will be restored
             alert('Lending entry deleted successfully! Shop balance has been restored.');
         } catch (error: any) {
-            setDeleteError(error.response?.data?.message || 'Failed to delete - Check your admin password');
+            setDeleteError(error.response?.data?.message || 'Failed to delete - Check your password');
         } finally {
             setDeleteLoading(false);
         }
@@ -551,7 +551,7 @@ export default function DebtorsPage() {
         }
         
         if (!invoiceDeletePassword) {
-            setInvoiceDeleteError('Admin password is required');
+            setInvoiceDeleteError('Your login password is required');
             return;
         }
         
@@ -580,7 +580,7 @@ export default function DebtorsPage() {
             await fetchShopBalance();
             alert('Invoice deleted successfully! Shop balance has been restored.');
         } catch (error: any) {
-            setInvoiceDeleteError(error.response?.data?.message || 'Failed to delete - Check your admin password');
+            setInvoiceDeleteError(error.response?.data?.message || 'Failed to delete - Check your password');
         } finally {
             setInvoiceDeleteLoading(false);
         }
@@ -1420,21 +1420,21 @@ export default function DebtorsPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Admin Password <span className="text-red-500">*</span>
+                                Your Login Password <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="password"
                                 value={deletePassword}
                                 onChange={(e) => setDeletePassword(e.target.value)}
                                 className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
-                                placeholder="Enter admin password"
+                                placeholder="Enter your login password"
                                 onKeyPress={(e) => {
                                     if (e.key === 'Enter' && deletePassword) {
                                         handleDeleteDebt();
                                     }
                                 }}
                             />
-                            <p className="text-xs text-gray-500 mt-1">Default: ibrahimi2024</p>
+                            <p className="text-xs text-gray-500 mt-1">Same password you use to login</p>
                         </div>
 
                         <div className="flex gap-3 pt-4">
@@ -2027,14 +2027,14 @@ export default function DebtorsPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Admin Password <span className="text-red-500">*</span>
+                                Your Login Password <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="password"
                                 value={invoiceDeletePassword}
                                 onChange={(e) => setInvoiceDeletePassword(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleDeleteInvoice()}
-                                placeholder="Enter admin password"
+                                placeholder="Enter your login password"
                                 className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
                                 autoFocus
                             />

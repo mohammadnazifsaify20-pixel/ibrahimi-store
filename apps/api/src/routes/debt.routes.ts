@@ -3,6 +3,7 @@ import { PrismaClient, DebtStatus, PaymentMethod } from '@repo/database';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { logAction } from '../services/audit.service';
 import { z, ZodError } from 'zod';
+import * as bcrypt from 'bcryptjs';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -614,17 +615,21 @@ router.delete('/debts/:id', authenticate, async (req: AuthRequest, res: Response
         const { adminPassword } = req.body;
         
         if (!adminPassword) {
-            return res.status(400).json({ message: 'Admin password is required' });
+            return res.status(400).json({ message: 'Password is required' });
         }
         
-        // Validate admin password
-        const passwordSetting = await prisma.systemSetting.findUnique({
-            where: { key: 'admin_balance_password' }
+        // Validate user's login password
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.id }
         });
-        const correctPassword = passwordSetting ? passwordSetting.value : 'ibrahimi2024';
         
-        if (adminPassword !== correctPassword) {
-            return res.status(403).json({ message: 'Invalid admin password' });
+        if (!user || !user.password) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+        
+        const isPasswordValid = await bcrypt.compare(adminPassword, user.password);
+        if (!isPasswordValid) {
+            return res.status(403).json({ message: 'Invalid password' });
         }
         
         // Delete the debt entry
