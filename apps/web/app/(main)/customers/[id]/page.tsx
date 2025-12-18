@@ -17,6 +17,9 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [generatingPDF, setGeneratingPDF] = useState(false);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [previewImageData, setPreviewImageData] = useState<string>('');
+    const [pdfInstance, setPdfInstance] = useState<any>(null);
     const { exchangeRate, fetchExchangeRate } = useSettingsStore();
 
     useEffect(() => {
@@ -118,13 +121,22 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
             const imgData = canvas.toDataURL('image/png');
             pdf.addImage(imgData, 'PNG', 0, 0, 85.6, 53.98);
 
-            // Download PDF
-            pdf.save(`${customer.name}-VIP-Card.pdf`);
+            // Store preview data and PDF instance
+            setPreviewImageData(imgData);
+            setPdfInstance(pdf);
+            setShowPreviewModal(true);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Failed to generate PDF. Please try again.');
         } finally {
             setGeneratingPDF(false);
+        }
+    };
+
+    const downloadPDF = () => {
+        if (pdfInstance) {
+            pdfInstance.save(`${customer.name}-VIP-Card.pdf`);
+            setShowPreviewModal(false);
         }
     };
 
@@ -179,7 +191,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                         >
                             {/* @ts-ignore */}
                             <CreditCard size={18} />
-                            {generatingPDF ? 'Generating...' : 'Download Card PDF'}
+                            {generatingPDF ? 'Generating...' : 'Show VIP Card'}
                         </button>
                         <button
                             onClick={() => setIsEditModalOpen(true)}
@@ -385,6 +397,59 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                     </tbody>
                 </table>
             </div>
+
+            {/* VIP Card Preview Modal */}
+            {showPreviewModal && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b pb-4">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-900">VIP Customer Card Preview</h3>
+                                <p className="text-sm text-gray-600 mt-1">Review the card before downloading</p>
+                            </div>
+                            <button
+                                onClick={() => setShowPreviewModal(false)}
+                                className="text-gray-400 hover:text-gray-600 text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="flex justify-center bg-gray-100 p-8 rounded-lg">
+                            <img 
+                                src={previewImageData} 
+                                alt="VIP Card Preview" 
+                                className="max-w-full h-auto shadow-2xl rounded-lg border-4 border-white"
+                                style={{ maxHeight: '400px' }}
+                            />
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p className="text-sm text-blue-800">
+                                <strong>✓ Store Contact:</strong> +971 50 123 4567<br/>
+                                <strong>✓ Customer ID:</strong> {customer.displayId || `EQ${String(customer.id).padStart(6, '0')}`}<br/>
+                                <strong>✓ Card Size:</strong> Credit card size (85.6mm x 53.98mm)
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={() => setShowPreviewModal(false)}
+                                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                            >
+                                Close Preview
+                            </button>
+                            <button
+                                onClick={downloadPDF}
+                                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <CreditCard size={20} />
+                                Download PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
