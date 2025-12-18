@@ -177,9 +177,16 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
             const outstanding = finalTotalUSD - finalPaidAmountUSD;
             const isCreditSale = outstanding > 0.05; // Tolerance for rounding
             
-            // Validate due date for credit sales
-            if (isCreditSale && paymentMethod === 'CREDIT' && !dueDate) {
-                setError('Due date is required for credit sales');
+            // Validate due date for ANY credit sales (partial payment or CREDIT method)
+            if (isCreditSale && !dueDate) {
+                setError('Due date is required when there is outstanding balance');
+                setLoading(false);
+                return;
+            }
+            
+            // Require customer selection for credit sales
+            if (isCreditSale && !customerId) {
+                setError('Please select a customer for credit sales');
                 setLoading(false);
                 return;
             }
@@ -413,13 +420,13 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                                             </div>
                                         </div>
 
-                                        {/* Credit Sale Fields */}
-                                        {paymentMethod === 'CREDIT' && (
+                                        {/* Credit Sale Fields - Show when there's outstanding balance */}
+                                        {(Number(paidAmountAFG) < (finalTotalUSD * Number(exchangeRate))) && (
                                             <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 space-y-3">
                                                 <div className="flex items-center gap-2 text-yellow-800 mb-2">
                                                     {/* @ts-ignore */}
                                                     <AlertTriangle size={18} />
-                                                    <span className="text-sm font-bold">Credit Sale - Due Date Required</span>
+                                                    <span className="text-sm font-bold">Outstanding Balance - Due Date Required</span>
                                                 </div>
                                                 
                                                 <div>
