@@ -307,8 +307,8 @@ export default function DebtorsPage() {
     const handlePayment = async () => {
         if (!selectedDebt || !paymentAmount) return;
         
-        const amount = Number(paymentAmount);
-        if (amount <= 0 || amount > selectedDebt.remainingBalance) {
+        const amountAFN = Number(paymentAmount);
+        if (amountAFN <= 0 || amountAFN > selectedDebt.remainingBalanceAFN) {
             setPaymentError('Invalid payment amount');
             return;
         }
@@ -317,8 +317,8 @@ export default function DebtorsPage() {
         setPaymentError('');
 
         try {
-            // Calculate AFN amount
-            const amountAFN = amount * (exchangeRate || 70);
+            // Calculate USD amount from AFN
+            const amount = amountAFN / (exchangeRate || 70);
             
             await api.post(`/debts/${selectedDebt.id}/payments`, {
                 amount,
@@ -636,7 +636,7 @@ export default function DebtorsPage() {
                                                                 onClick={() => {
                                                                     setSelectedDebt(debt);
                                                                     setShowPaymentModal(true);
-                                                                    setPaymentAmount((Number(debt.remainingBalance) || 0).toFixed(2));
+                                                                    setPaymentAmount(Math.floor(Number(debt.remainingBalanceAFN) || 0).toString());
                                                                 }}
                                                                 className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                                                             >
@@ -719,17 +719,23 @@ export default function DebtorsPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Payment Amount (USD) <span className="text-red-500">*</span>
+                                Payment Amount (AFN) <span className="text-red-500">*</span>
                             </label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                value={paymentAmount}
-                                onChange={(e) => setPaymentAmount(e.target.value)}
-                                max={selectedDebt.remainingBalance}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                placeholder="0.00"
-                            />
+                            <div className="relative">
+                                <span className="absolute left-3 top-2.5 text-gray-500 font-bold">؋</span>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    value={paymentAmount}
+                                    onChange={(e) => setPaymentAmount(e.target.value)}
+                                    max={selectedDebt.remainingBalanceAFN}
+                                    className="w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="0"
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                USD Equivalent: ${(Number(paymentAmount) / (exchangeRate || 70)).toFixed(2)}
+                            </p>
                         </div>
 
                         <div>
