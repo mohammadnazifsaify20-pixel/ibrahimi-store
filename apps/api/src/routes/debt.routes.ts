@@ -350,6 +350,37 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
                 }
             });
             
+            // Update shop balance - Add back the paid amount
+            const shopBalanceSetting = await tx.systemSetting.findUnique({
+                where: { key: 'shop_balance' }
+            });
+            
+            if (shopBalanceSetting) {
+                const currentBalance = Number(shopBalanceSetting.value) || 0;
+                const newBalance = currentBalance + finalAmountAFN;
+                
+                await tx.systemSetting.update({
+                    where: { key: 'shop_balance' },
+                    data: { value: newBalance.toString() }
+                });
+                
+                // Log the balance transaction
+                await tx.systemSetting.create({
+                    data: {
+                        key: `balance_log_${Date.now()}`,
+                        value: JSON.stringify({
+                            type: 'DEBT_PAYMENT',
+                            previousBalance: currentBalance,
+                            newBalance: newBalance,
+                            amount: finalAmountAFN,
+                            description: `Debt payment received from ${debt.customer.name}`,
+                            timestamp: new Date().toISOString(),
+                            reference: `DEBT-${debt.id}`
+                        })
+                    }
+                });
+            }
+            
             // Update invoice if applicable
             const newInvoiceOutstanding = Number(debt.invoice.outstandingAmount) - amount;
             const newInvoiceStatus = newInvoiceOutstanding <= 0 ? 'PAID' : debt.invoice.status;
