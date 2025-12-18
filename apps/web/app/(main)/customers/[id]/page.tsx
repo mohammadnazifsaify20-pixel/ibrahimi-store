@@ -15,6 +15,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [generatingPDF, setGeneratingPDF] = useState(false);
     const { exchangeRate, fetchExchangeRate } = useSettingsStore();
 
     useEffect(() => {
@@ -40,6 +41,79 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
             setCreditHistory(res.data);
         } catch (error) {
             console.error('Failed to fetch credit history', error);
+        }
+    };
+
+    const generatePDFCard = async () => {
+        setGeneratingPDF(true);
+        try {
+            // Dynamically import libraries to avoid SSR issues
+            const html2canvas = (await import('html2canvas')).default;
+            const { jsPDF } = await import('jspdf');
+
+            // Create temporary card element
+            const cardHTML = `
+                <div style="width: 323.15px; height: 204px; background: white; border: 2px solid black; border-radius: 16px; padding: 16px; position: relative; font-family: Arial, sans-serif;">
+                    <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 8px; margin-bottom: 8px;">
+                        <h1 style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; line-height: 1.2;">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
+                        <h2 style="font-size: 12px; font-weight: bold; margin: 4px 0; line-height: 1.2;">(شرکت پرزه جات ابراهیمی و برادران)</h2>
+                        <p style="font-size: 10px; font-weight: bold; background: black; color: white; display: inline-block; padding: 2px 8px; border-radius: 12px; margin: 4px 0;">VIP CUSTOMER CARD</p>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 8px 0;">
+                        <div style="text-center; width: 100%;">
+                            <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Customer Name</p>
+                            <h2 style="font-size: 24px; font-weight: bold; margin: 0; padding: 0 8px;">${customer.name}</h2>
+                        </div>
+                        <div style="margin-top: 16px; display: flex; justify-content: space-between; width: 100%; padding: 0 16px;">
+                            <div style="text-align: left;">
+                                <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Phone</p>
+                                <p style="font-family: 'Courier New', monospace; font-weight: bold; font-size: 14px; margin: 0;">${customer.phone || 'N/A'}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Customer ID</p>
+                                <p style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; margin: 0;">${customer.displayId || `EQ${String(customer.id).padStart(6, '0')}`}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; font-size: 10px; padding-top: 8px; border-top: 1px solid black; margin-top: 8px;">
+                        Please present this card for identification
+                    </div>
+                </div>
+            `;
+
+            // Create temporary container
+            const container = document.createElement('div');
+            container.innerHTML = cardHTML;
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            document.body.appendChild(container);
+
+            // Generate canvas from HTML
+            const canvas = await html2canvas(container.firstElementChild as HTMLElement, {
+                scale: 3,
+                backgroundColor: '#ffffff'
+            });
+
+            // Remove temporary container
+            document.body.removeChild(container);
+
+            // Create PDF (85.6mm x 53.98mm = credit card size)
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: [85.6, 53.98]
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, 85.6, 53.98);
+
+            // Download PDF
+            pdf.save(`${customer.name}-VIP-Card.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            setGeneratingPDF(false);
         }
     };
 
@@ -88,12 +162,13 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                     </div>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => router.push(`/customers/${params.id}/print-card`)}
-                            className="flex items-center gap-2 bg-gray-800 text-white px-3 py-2 rounded-lg hover:bg-black transition shadow-sm"
+                            onClick={generatePDFCard}
+                            disabled={generatingPDF}
+                            className="flex items-center gap-2 bg-gray-800 text-white px-3 py-2 rounded-lg hover:bg-black transition shadow-sm disabled:opacity-50"
                         >
                             {/* @ts-ignore */}
                             <CreditCard size={18} />
-                            Print Card
+                            {generatingPDF ? 'Generating...' : 'Download Card PDF'}
                         </button>
                         <button
                             onClick={() => setIsEditModalOpen(true)}
