@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle, Plus, Search, X } from 'lucide-react';
 import api from '../../../lib/api';
 
-// Version: 2024-12-18-v4 - Fixed deployment
+// Version: 2024-12-18-v5 - Cache bypass timestamp: 20241218-235959
 interface Debt {
     id: number;
     customer: {

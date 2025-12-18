@@ -85,6 +85,14 @@ export default function PrintCustomerCardPage({ params }: { params: { id: string
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                         color-adjust: exact !important;
+                        visibility: visible !important;
+                    }
+                    body * {
+                        visibility: hidden !important;
+                    }
+                    #card-wrapper,
+                    #card-wrapper * {
+                        visibility: visible !important;
                     }
                     html, body {
                         margin: 0 !important;
