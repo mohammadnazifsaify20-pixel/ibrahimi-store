@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle, Plus, Search, X } from 'lucide-react';
 import api from '../../../lib/api';
-import { useSettingsStore } from '../../../lib/settingsStore';
 
 interface Debt {
     id: number;
@@ -52,7 +51,7 @@ interface Summary {
 }
 
 export default function DebtorsPage() {
-    const { exchangeRate: globalRate } = useSettingsStore();
+    const [exchangeRate, setExchangeRate] = useState(70); // Default exchange rate
     const [debts, setDebts] = useState<Debt[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -60,6 +59,7 @@ export default function DebtorsPage() {
     const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showLendingModal, setShowLendingModal] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     
     // Payment form
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -94,6 +94,7 @@ export default function DebtorsPage() {
 
     const fetchData = async () => {
         setLoading(true);
+        setError(null);
         try {
             const [debtsRes, summaryRes] = await Promise.all([
                 api.get('/debts', { params: filter !== 'all' ? { status: filter.toUpperCase() } : {} }),
@@ -107,8 +108,9 @@ export default function DebtorsPage() {
             
             setDebts(filteredDebts);
             setSummary(summaryRes.data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch debts:', error);
+            setError(error.response?.data?.message || 'Failed to load debts data');
         } finally {
             setLoading(false);
         }
@@ -203,8 +205,8 @@ export default function DebtorsPage() {
         setLendError('');
         
         try {
-            const exchangeRate = globalRate || 70;
-            const amountUSD = amountAFN / exchangeRate;
+            const currentExchangeRate = exchangeRate || 70;
+            const amountUSD = amountAFN / currentExchangeRate;
             
             await api.post('/debts/lend', {
                 customerId: selectedCustomer.id,
@@ -212,7 +214,7 @@ export default function DebtorsPage() {
                 amountAFN,
                 dueDate: new Date(lendDueDate).toISOString(),
                 notes: lendNotes || 'Cash Lending',
-                exchangeRate
+                exchangeRate: currentExchangeRate
             });
             
             // Refresh data
@@ -236,6 +238,23 @@ export default function DebtorsPage() {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="text-gray-500">Loading debts...</div>
+            </div>
+        );
+    }
+    
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center space-y-4">
+                    <AlertCircle className="mx-auto text-red-500" size={48} />
+                    <div className="text-red-600 font-medium">{error}</div>
+                    <button
+                        onClick={fetchData}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        Retry
+                    </button>
+                </div>
             </div>
         );
     }
