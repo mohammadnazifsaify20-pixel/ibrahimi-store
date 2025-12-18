@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle, Plus, Search, X } from 'lucide-react';
 import api from '../../../lib/api';
 
+// Version: 2024-12-18-v2 - Force cache refresh
 interface Debt {
     id: number;
     customer: {
