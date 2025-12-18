@@ -927,7 +927,7 @@ export default function DebtorsPage() {
                                                     >
                                                         📋 History
                                                     </button>
-                                                    {debt.status !== 'SETTLED' && (
+                                                    {debt.status !== 'SETTLED' ? (
                                                         <>
                                                             <button
                                                                 onClick={() => {
@@ -971,6 +971,17 @@ export default function DebtorsPage() {
                                                                 🗑️ Delete
                                                             </button>
                                                         </>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedDebt(debt);
+                                                                setShowDeleteModal(true);
+                                                            }}
+                                                            className="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                                                            title="Delete Paid Lending Entry"
+                                                        >
+                                                            🗑️ Delete
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>

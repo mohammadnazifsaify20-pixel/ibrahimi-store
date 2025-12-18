@@ -647,12 +647,20 @@ router.delete('/debts/:id', authenticate, async (req: AuthRequest, res: Response
                 }
             });
             
-            // Restore shop balance (add back the lent amount)
+            // Calculate balance restoration
+            // If debt is paid: restore original amount minus payments (net effect)
+            // If debt is unpaid: restore full original amount
+            const isPaid = creditEntry.status === 'SETTLED';
+            const balanceRestoration = isPaid 
+                ? Number(creditEntry.originalAmountAFN) - Number(creditEntry.paidAmountAFN)
+                : Number(creditEntry.originalAmountAFN);
+            
+            // Restore shop balance
             const balanceSetting = await tx.systemSetting.findUnique({
                 where: { key: 'shop_balance' }
             });
             const currentBalance = balanceSetting ? parseFloat(balanceSetting.value) : 0;
-            const newBalance = currentBalance + Number(creditEntry.originalAmountAFN);
+            const newBalance = currentBalance + balanceRestoration;
             
             await tx.systemSetting.upsert({
                 where: { key: 'shop_balance' },
@@ -670,13 +678,22 @@ router.delete('/debts/:id', authenticate, async (req: AuthRequest, res: Response
                     key: `balance_log_${Date.now()}`,
                     value: JSON.stringify({
                         type: 'LENDING_DELETE',
-                        amount: Number(creditEntry.originalAmountAFN),
-                        description: `Lending deleted - Balance restored for ${creditEntry.customer.name}`,
+                        amount: balanceRestoration,
+                        originalAmount: Number(creditEntry.originalAmountAFN),
+                        paidAmount: Number(creditEntry.paidAmountAFN),
+                        description: isPaid 
+                            ? `Paid lending deleted - Net balance restored for ${creditEntry.customer.name} (Original: ؋${creditEntry.originalAmountAFN}, Paid: ؋${creditEntry.paidAmountAFN})`
+                            : `Lending deleted - Balance restored for ${creditEntry.customer.name}`,
                         referenceId: String(creditEntry.id),
                         timestamp: new Date().toISOString()
                     }),
                     description: 'Balance Transaction: LENDING_DELETE'
                 }
+            });
+            
+            // Delete debt payments first (foreign key constraint)
+            await tx.debtPayment.deleteMany({
+                where: { creditEntryId: Number(id) }
             });
             
             // Delete the credit entry
