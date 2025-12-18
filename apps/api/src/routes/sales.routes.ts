@@ -35,10 +35,18 @@ const createSaleSchema = z.object({
 
 // --- Sales / Invoice Routes ---
 
-// Get all sales (Invoices)
+// Get all sales (Invoices) - Excludes lending-only invoices
 router.get('/sales', authenticate, async (req: Request, res: Response) => {
     try {
         const invoices = await prisma.invoice.findMany({
+            where: {
+                // Exclude lending invoices (those starting with LEND-)
+                NOT: {
+                    invoiceNumber: {
+                        startsWith: 'LEND-'
+                    }
+                }
+            },
             include: {
                 customer: true,
                 user: { select: { name: true } }
