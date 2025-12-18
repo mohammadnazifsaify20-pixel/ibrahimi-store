@@ -84,6 +84,15 @@ export default function DebtorsPage() {
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [deleteError, setDeleteError] = useState('');
     
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    // History modal state
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [historyCustomer, setHistoryCustomer] = useState<any>(null);
+    const [customerHistory, setCustomerHistory] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    
     // Lending form
     const [customers, setCustomers] = useState<any[]>([]);
     const [customerSearch, setCustomerSearch] = useState('');
@@ -482,6 +491,26 @@ export default function DebtorsPage() {
         }
     };
     
+    const fetchCustomerHistory = async (customerId: number) => {
+        setHistoryLoading(true);
+        try {
+            // Fetch all debts for this customer (both paid and unpaid)
+            const response = await api.get(`/debts?customerId=${customerId}`);
+            setCustomerHistory(response.data);
+        } catch (error) {
+            console.error('Failed to fetch customer history:', error);
+            setCustomerHistory([]);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+    
+    const handleShowHistory = (customer: any) => {
+        setHistoryCustomer(customer);
+        setShowHistoryModal(true);
+        fetchCustomerHistory(customer.id);
+    };
+    
     const handleLending = async () => {
         if (!selectedCustomer || !lendAmount || !lendDueDate) {
             setLendError('Please fill in all required fields');
@@ -567,6 +596,18 @@ export default function DebtorsPage() {
         c.name?.toLowerCase().includes(customerSearch.toLowerCase()) || 
         c.displayId?.toLowerCase().includes(customerSearch.toLowerCase())
     );
+    
+    // Filter debts based on search query
+    const filteredDebts = debts.filter(debt => {
+        if (!searchQuery) return true;
+        const query = searchQuery.toLowerCase();
+        return (
+            debt.customer.name?.toLowerCase().includes(query) ||
+            debt.customer.displayId?.toLowerCase().includes(query) ||
+            debt.customer.id.toString().includes(query) ||
+            debt.invoice.invoiceNumber?.toLowerCase().includes(query)
+        );
+    });
 
     return (
         <div className="p-6 space-y-6">
@@ -665,6 +706,33 @@ export default function DebtorsPage() {
                 </div>
             )}
 
+            {/* Search Bar */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by customer name, ID, or invoice number..."
+                        className="w-full pl-11 pr-10 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                        >
+                            <X size={20} />
+                        </button>
+                    )}
+                </div>
+                {searchQuery && (
+                    <p className="text-sm text-gray-600 mt-2">
+                        Found {filteredDebts.length} result{filteredDebts.length !== 1 ? 's' : ''} for "{searchQuery}"
+                    </p>
+                )}
+            </div>
+
             {/* Filter Tabs */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 flex gap-1">
                 {[
@@ -690,11 +758,11 @@ export default function DebtorsPage() {
 
             {/* Debts Table */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {debts.length === 0 ? (
+                {filteredDebts.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">
                         <AlertCircle size={48} className="mx-auto mb-4 text-gray-300" />
                         <p className="text-lg font-medium">No debts found</p>
-                        <p className="text-sm mt-1">No debts match the current filter</p>
+                        <p className="text-sm mt-1">{searchQuery ? `No results for "${searchQuery}"` : 'No debts match the current filter'}</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -712,7 +780,7 @@ export default function DebtorsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {debts.map((debt) => {
+                                {filteredDebts.map((debt) => {
                                     const daysUntilDue = getDaysUntilDue(debt.dueDate);
                                     return (
                                         <tr key={debt.id} className="hover:bg-gray-50 transition-colors">
@@ -771,6 +839,13 @@ export default function DebtorsPage() {
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleShowHistory(debt.customer)}
+                                                        className="bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                                                        title="View Customer History"
+                                                    >
+                                                        📋 History
+                                                    </button>
                                                     {debt.status !== 'SETTLED' && (
                                                         <>
                                                             <button
@@ -1501,6 +1576,174 @@ export default function DebtorsPage() {
                             >
                                 {balanceLoading ? 'Updating...' : '✓ Update Balance'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Customer History Modal */}
+            {showHistoryModal && historyCustomer && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="flex items-center justify-between border-b p-6">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-900">
+                                    📋 Debt History
+                                </h3>
+                                <p className="text-gray-600 mt-1">
+                                    {historyCustomer.name}
+                                    {historyCustomer.displayId && (
+                                        <span className="ml-2 text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                                            {historyCustomer.displayId}
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowHistoryModal(false);
+                                    setHistoryCustomer(null);
+                                    setCustomerHistory([]);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {historyLoading ? (
+                                <div className="flex items-center justify-center h-32">
+                                    <div className="text-gray-500">Loading history...</div>
+                                </div>
+                            ) : customerHistory.length === 0 ? (
+                                <div className="text-center text-gray-500 py-8">
+                                    <AlertCircle size={48} className="mx-auto mb-4 text-gray-300" />
+                                    <p>No debt history found for this customer</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {customerHistory.map((debt) => (
+                                        <div 
+                                            key={debt.id}
+                                            className={`border-2 rounded-lg p-4 ${
+                                                debt.status === 'SETTLED' 
+                                                    ? 'bg-green-50 border-green-200' 
+                                                    : 'bg-white border-gray-200'
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                                                            {debt.invoice.invoiceNumber}
+                                                        </span>
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${
+                                                            debt.status === 'SETTLED' ? 'bg-green-100 text-green-700 border-green-300' :
+                                                            debt.status === 'OVERDUE' ? 'bg-red-100 text-red-700 border-red-300' :
+                                                            debt.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                                                            'bg-blue-100 text-blue-700 border-blue-300'
+                                                        }`}>
+                                                            {debt.status === 'SETTLED' ? 'PAID' : debt.status.replace('_', ' ')}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Created: {new Date(debt.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm text-gray-600">Original Amount</p>
+                                                    <p className="text-xl font-bold text-gray-900">
+                                                        ؋{debt.originalAmountAFN.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-4 mb-3">
+                                                <div className="bg-gray-50 rounded p-3">
+                                                    <p className="text-xs text-gray-600 mb-1">Paid</p>
+                                                    <p className="text-lg font-bold text-green-600">
+                                                        ؋{debt.paidAmountAFN.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-gray-50 rounded p-3">
+                                                    <p className="text-xs text-gray-600 mb-1">Remaining</p>
+                                                    <p className="text-lg font-bold text-orange-600">
+                                                        ؋{debt.remainingBalanceAFN.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-gray-50 rounded p-3">
+                                                    <p className="text-xs text-gray-600 mb-1">Due Date</p>
+                                                    <p className="text-sm font-bold text-gray-900">
+                                                        {new Date(debt.dueDate).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {debt.debtPayments && debt.debtPayments.length > 0 && (
+                                                <div className="mt-3 border-t pt-3">
+                                                    <p className="text-xs font-medium text-gray-700 mb-2">
+                                                        Payment History ({debt.debtPayments.length})
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {debt.debtPayments.map((payment: DebtPayment) => (
+                                                            <div 
+                                                                key={payment.id}
+                                                                className="flex items-center justify-between text-sm bg-gray-50 rounded p-2"
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-green-600 font-bold">✓</span>
+                                                                    <span className="text-gray-600">
+                                                                        {new Date(payment.paymentDate).toLocaleDateString()}
+                                                                    </span>
+                                                                    <span className="text-xs bg-gray-200 px-2 py-1 rounded">
+                                                                        {payment.paymentMethod}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="font-bold text-green-600">
+                                                                    ؋{payment.amountAFN.toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {debt.notes && (
+                                                <div className="mt-3 text-sm text-gray-600 italic border-t pt-2">
+                                                    Note: {debt.notes}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="border-t p-4 bg-gray-50">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-600">Total Debts</p>
+                                    <p className="text-2xl font-bold text-gray-900">{customerHistory.length}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600">Total Outstanding</p>
+                                    <p className="text-2xl font-bold text-orange-600">
+                                        ؋{customerHistory
+                                            .filter(d => d.status !== 'SETTLED')
+                                            .reduce((sum, d) => sum + d.remainingBalanceAFN, 0)
+                                            .toLocaleString()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600">Total Paid</p>
+                                    <p className="text-2xl font-bold text-green-600">
+                                        ؋{customerHistory
+                                            .reduce((sum, d) => sum + d.paidAmountAFN, 0)
+                                            .toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
