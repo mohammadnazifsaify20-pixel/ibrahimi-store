@@ -17,7 +17,7 @@ const saleItemSchema = z.object({
 });
 
 const createSaleSchema = z.object({
-    customerId: z.number().int().optional().nullable(),
+    customerId: z.union([z.number().int(), z.null(), z.undefined()]).optional(),
     items: z.array(saleItemSchema).min(1),
     tax: z.number().min(0).default(0),
     discount: z.number().min(0).default(0),
@@ -25,7 +25,7 @@ const createSaleSchema = z.object({
     paymentMethod: z.nativeEnum(PaymentMethod),
     paymentReference: z.string().optional(),
     exchangeRate: z.number().min(0).default(1),
-    dueDate: z.string().datetime().optional(), // Required for credit sales
+    dueDate: z.string().optional(), // Will be validated as datetime when present
     debtNotes: z.string().optional(), // Optional notes for credit sales
 });
 
@@ -187,10 +187,8 @@ router.post('/sales', authenticate, async (req: AuthRequest, res: Response) => {
             // For now, allow it to keep consistency.
             // 4. Handle Credit (Loan) if outstanding > 0 AND it is a real customer (optional check)
             if (outstanding > 0 && finalCustomerId) {
-                // Validate that dueDate is provided for credit sales
-                if (!dueDate) {
-                    throw new Error('Due date is required for credit sales');
-                }
+                // Use provided due date or default to 30 days from now
+                const creditDueDate = dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
                 
                 // Calculate AFN equivalent of the outstanding amount at THIS MOMENT's rate
                 // This "locks" the debt in AFN, preventing exchange rate fluctuations from affecting the owed amount in local currency.
@@ -215,7 +213,7 @@ router.post('/sales', authenticate, async (req: AuthRequest, res: Response) => {
                         remainingBalance: outstanding,
                         // @ts-ignore
                         remainingBalanceAFN: outstandingAFN,
-                        dueDate: new Date(dueDate),
+                        dueDate: creditDueDate,
                         notes: debtNotes || null,
                         status: 'ACTIVE'
                     }

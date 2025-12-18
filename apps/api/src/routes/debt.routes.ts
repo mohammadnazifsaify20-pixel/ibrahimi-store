@@ -481,4 +481,99 @@ router.post('/debts/batch-update-status', authenticate, async (req: Request, res
     }
 });
 
+// Create Lending Entry (Give money to customer - they owe you)
+const lendingSchema = z.object({
+    customerId: z.number().int().positive(),
+    amount: z.number().positive(),
+    amountAFN: z.number().positive(),
+    dueDate: z.string().datetime(),
+    notes: z.string().optional(),
+    exchangeRate: z.number().positive().default(70),
+});
+
+router.post('/debts/lend', authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+        const { customerId, amount, amountAFN, dueDate, notes, exchangeRate } = lendingSchema.parse(req.body);
+        const userId = req.user!.id;
+        
+        const result = await prisma.$transaction(async (tx) => {
+            // Verify customer exists
+            const customer = await tx.customer.findUnique({
+                where: { id: customerId }
+            });
+            
+            if (!customer) {
+                throw new Error('Customer not found');
+            }
+            
+            // Create a dummy invoice for the lending entry
+            const invoiceCount = await tx.invoice.count();
+            const invoiceNumber = `LEND-${new Date().getFullYear()}-${String(invoiceCount + 1).padStart(6, '0')}`;
+            
+            const invoice = await tx.invoice.create({
+                data: {
+                    invoiceNumber,
+                    customerId,
+                    userId,
+                    subtotal: 0,
+                    tax: 0,
+                    discount: 0,
+                    total: 0,
+                    exchangeRate,
+                    totalLocal: 0,
+                    paidAmount: 0,
+                    outstandingAmount: 0,
+                    status: 'PAID',
+                }
+            });
+            
+            // Create credit entry (customer owes you)
+            const creditEntry = await tx.creditEntry.create({
+                data: {
+                    customerId,
+                    invoiceId: invoice.id,
+                    originalAmount: amount,
+                    originalAmountAFN: amountAFN,
+                    remainingBalance: amount,
+                    remainingBalanceAFN: amountAFN,
+                    paidAmount: 0,
+                    paidAmountAFN: 0,
+                    dueDate: new Date(dueDate),
+                    notes: notes || 'Cash Lending',
+                    status: calculateDebtStatus(new Date(dueDate), amount)
+                }
+            });
+            
+            // Update customer outstanding balance
+            await tx.customer.update({
+                where: { id: customerId },
+                data: {
+                    outstandingBalance: { increment: amount },
+                    outstandingBalanceAFN: { increment: amountAFN }
+                }
+            });
+            
+            return { creditEntry, invoice };
+        });
+        
+        // Log the action
+        await logAction(
+            userId,
+            'CREATE_LENDING',
+            'CreditEntry',
+            result.creditEntry.id,
+            { customerId, amount, amountAFN }
+        );
+        
+        res.status(201).json(result);
+    } catch (error: any) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ errors: error.issues });
+        }
+        
+        console.error('Error creating lending entry:', error);
+        res.status(400).json({ message: error.message || 'Failed to create lending entry' });
+    }
+});
+
 export default router;

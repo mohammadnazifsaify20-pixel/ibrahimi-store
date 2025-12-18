@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertCircle, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AlertCircle, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle, Plus, Search, X } from 'lucide-react';
 import api from '../../../lib/api';
+import { useSettingsStore } from '../../../lib/settingsStore';
 
 interface Debt {
     id: number;
@@ -51,12 +52,14 @@ interface Summary {
 }
 
 export default function DebtorsPage() {
+    const { exchangeRate: globalRate } = useSettingsStore();
     const [debts, setDebts] = useState<Debt[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<string>('all');
     const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showLendingModal, setShowLendingModal] = useState(false);
     
     // Payment form
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -64,10 +67,30 @@ export default function DebtorsPage() {
     const [paymentNotes, setPaymentNotes] = useState('');
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [paymentError, setPaymentError] = useState('');
+    
+    // Lending form
+    const [customers, setCustomers] = useState<any[]>([]);
+    const [customerSearch, setCustomerSearch] = useState('');
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+    const [lendAmount, setLendAmount] = useState('');
+    const [lendDueDate, setLendDueDate] = useState('');
+    const [lendNotes, setLendNotes] = useState('');
+    const [lendLoading, setLendLoading] = useState(false);
+    const [lendError, setLendError] = useState('');
 
     useEffect(() => {
         fetchData();
+        fetchCustomers();
     }, [filter]);
+    
+    const fetchCustomers = async () => {
+        try {
+            const res = await api.get('/customers');
+            setCustomers(res.data);
+        } catch (error) {
+            console.error('Failed to fetch customers:', error);
+        }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -163,6 +186,51 @@ export default function DebtorsPage() {
             setPaymentLoading(false);
         }
     };
+    
+    const handleLending = async () => {
+        if (!selectedCustomer || !lendAmount || !lendDueDate) {
+            setLendError('Please fill in all required fields');
+            return;
+        }
+        
+        const amountAFN = Number(lendAmount);
+        if (amountAFN <= 0) {
+            setLendError('Invalid amount');
+            return;
+        }
+        
+        setLendLoading(true);
+        setLendError('');
+        
+        try {
+            const exchangeRate = globalRate || 70;
+            const amountUSD = amountAFN / exchangeRate;
+            
+            await api.post('/debts/lend', {
+                customerId: selectedCustomer.id,
+                amount: amountUSD,
+                amountAFN,
+                dueDate: new Date(lendDueDate).toISOString(),
+                notes: lendNotes || 'Cash Lending',
+                exchangeRate
+            });
+            
+            // Refresh data
+            await fetchData();
+            
+            // Close modal and reset
+            setShowLendingModal(false);
+            setSelectedCustomer(null);
+            setCustomerSearch('');
+            setLendAmount('');
+            setLendDueDate('');
+            setLendNotes('');
+        } catch (error: any) {
+            setLendError(error.response?.data?.message || 'Failed to create lending entry');
+        } finally {
+            setLendLoading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -171,6 +239,11 @@ export default function DebtorsPage() {
             </div>
         );
     }
+    
+    const filteredCustomers = customers.filter(c => 
+        c.name?.toLowerCase().includes(customerSearch.toLowerCase()) || 
+        c.displayId?.toLowerCase().includes(customerSearch.toLowerCase())
+    );
 
     return (
         <div className="p-6 space-y-6">
@@ -179,6 +252,13 @@ export default function DebtorsPage() {
                     <h1 className="text-3xl font-bold text-gray-900">Debt Management</h1>
                     <p className="text-gray-600 mt-1">Track and manage customer credit accounts</p>
                 </div>
+                <button
+                    onClick={() => setShowLendingModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                    <Plus size={20} />
+                    Lend Money
+                </button>
             </div>
 
             {/* Summary Cards */}
@@ -469,6 +549,146 @@ export default function DebtorsPage() {
                             >
                                 {paymentLoading ? 'Processing...' : 'Confirm Payment'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Lending Modal */}
+            {showLendingModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">Lend Money to Customer</h3>
+                        
+                        {lendError && (
+                            <div className="mb-4 bg-red-50 text-red-600 p-3 rounded text-sm">
+                                {lendError}
+                            </div>
+                        )}
+                        
+                        <div className="space-y-4">
+                            <div className="relative">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Customer <span className="text-red-500">*</span>
+                                </label>
+                                
+                                {selectedCustomer ? (
+                                    <div className="flex items-center justify-between w-full px-4 py-2 border rounded-lg bg-blue-50 border-blue-200">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-blue-900">{selectedCustomer.name}</span>
+                                            {selectedCustomer.displayId && <span className="text-xs font-mono text-blue-600">{selectedCustomer.displayId}</span>}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedCustomer(null);
+                                                setCustomerSearch('');
+                                            }}
+                                            className="text-blue-500 hover:text-blue-700 p-1"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                value={customerSearch}
+                                                onChange={(e) => setCustomerSearch(e.target.value)}
+                                                placeholder="Search customer..."
+                                                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+                                        
+                                        {customerSearch && (
+                                            <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                                                {filteredCustomers.length === 0 ? (
+                                                    <div className="p-3 text-sm text-gray-500 text-center">No customers found</div>
+                                                ) : (
+                                                    filteredCustomers.map(c => (
+                                                        <button
+                                                            key={c.id}
+                                                            onClick={() => {
+                                                                setSelectedCustomer(c);
+                                                                setCustomerSearch('');
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-blue-50 border-b last:border-b-0"
+                                                        >
+                                                            <div className="font-bold text-gray-900">{c.name}</div>
+                                                            {c.displayId && <div className="text-xs text-gray-500 font-mono">{c.displayId}</div>}
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Amount (AFN) <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2.5 text-gray-500">؋</span>
+                                    <input
+                                        type="number"
+                                        value={lendAmount}
+                                        onChange={(e) => setLendAmount(e.target.value)}
+                                        className="w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        placeholder="0"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Due Date <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    value={lendDueDate}
+                                    onChange={(e) => setLendDueDate(e.target.value)}
+                                    min={new Date().toISOString().split('T')[0]}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                                <textarea
+                                    value={lendNotes}
+                                    onChange={(e) => setLendNotes(e.target.value)}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                    rows={2}
+                                    placeholder="Purpose of lending..."
+                                />
+                            </div>
+                            
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={() => {
+                                        setShowLendingModal(false);
+                                        setSelectedCustomer(null);
+                                        setCustomerSearch('');
+                                        setLendAmount('');
+                                        setLendDueDate('');
+                                        setLendNotes('');
+                                        setLendError('');
+                                    }}
+                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleLending}
+                                    disabled={lendLoading || !selectedCustomer || !lendAmount || !lendDueDate}
+                                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                >
+                                    {lendLoading ? 'Processing...' : 'Create Lending'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
