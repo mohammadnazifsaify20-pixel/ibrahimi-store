@@ -670,6 +670,17 @@ export default function DebtorsPage() {
                                                         <>
                                                             <button
                                                                 onClick={() => {
+                                                                    setSelectedCustomer(debt.customer);
+                                                                    setSelectedDebt(debt);
+                                                                    setPaymentAmount(Math.floor(Number(debt.remainingBalanceAFN) || 0).toString());
+                                                                    setShowPaymentModal(true);
+                                                                }}
+                                                                className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                                            >
+                                                                PAY
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
                                                                     setSelectedDebt(debt);
                                                                     const currentDate = debt.dueDate 
                                                                         ? new Date(debt.dueDate).toISOString().split('T')[0]
