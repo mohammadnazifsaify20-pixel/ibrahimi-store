@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle, Plus, Search, X } from 'lucide-react';
 import api from '../../../lib/api';
+import { useSettingsStore } from '../../../lib/settingsStore';
 
 // Version: 2024-12-18-v5 - Cache bypass timestamp: 20241218-235959
 interface Debt {
@@ -52,7 +53,7 @@ interface Summary {
 }
 
 export default function DebtorsPage() {
-    const [exchangeRate, setExchangeRate] = useState(70); // Default exchange rate
+    const { exchangeRate, fetchExchangeRate } = useSettingsStore();
     const [debts, setDebts] = useState<Debt[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -263,6 +264,7 @@ export default function DebtorsPage() {
     
     useEffect(() => {
         fetchCustomers();
+        fetchExchangeRate();
     }, []);
     
 
