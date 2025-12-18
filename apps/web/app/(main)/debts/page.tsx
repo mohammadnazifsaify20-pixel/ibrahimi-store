@@ -77,11 +77,6 @@ export default function DebtorsPage() {
     const [lendNotes, setLendNotes] = useState('');
     const [lendLoading, setLendLoading] = useState(false);
     const [lendError, setLendError] = useState('');
-
-    useEffect(() => {
-        fetchData();
-        fetchCustomers();
-    }, [filter]);
     
     const fetchCustomers = async () => {
         try {
@@ -115,6 +110,15 @@ export default function DebtorsPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchData();
+    }, [filter]);
+    
+    useEffect(() => {
+        fetchCustomers();
+    }, []);
+    
 
     const getStatusColor = (status: string) => {
         switch (status) {
