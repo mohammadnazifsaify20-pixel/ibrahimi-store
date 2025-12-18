@@ -197,7 +197,6 @@ export default function DebtorsPage() {
                 <div class="amount-box">
                     <div><strong>LOAN AMOUNT / مبلغ قرض</strong></div>
                     <div class="amount">؋ ${Math.floor(Number(debt.originalAmountAFN) || 0).toLocaleString()}</div>
-                    <div style="margin-top: 10px; font-size: 18px;">$ ${(Number(debt.originalAmount) || 0).toFixed(2)} USD</div>
                 </div>
 
                 <div class="bilingual terms">
@@ -318,8 +317,12 @@ export default function DebtorsPage() {
         setPaymentError('');
 
         try {
+            // Calculate AFN amount
+            const amountAFN = amount * (exchangeRate || 70);
+            
             await api.post(`/debts/${selectedDebt.id}/payments`, {
                 amount,
+                amountAFN,
                 paymentMethod,
                 notes: paymentNotes
             });
