@@ -359,6 +359,25 @@ router.delete('/:id', authenticate, authorize([Role.ADMIN]), async (req: AuthReq
             return res.status(403).json({ message: 'Invalid password' });
         }
 
+        // Check if customer has outstanding balance
+        const customer = await prisma.customer.findUnique({
+            where: { id: customerId },
+            select: { 
+                outstandingBalance: true,
+                name: true
+            }
+        });
+
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        if (Number(customer.outstandingBalance) > 0) {
+            return res.status(400).json({ 
+                message: `Cannot delete customer "${customer.name}" with outstanding balance. Please clear all debts first.` 
+            });
+        }
+
         // Cascade Delete: Delete related records first
         await prisma.$transaction(async (tx) => {
             // 1. Find all invoices to cleanup their items

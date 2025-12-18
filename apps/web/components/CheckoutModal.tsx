@@ -175,7 +175,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
             
             // Check if this is a credit sale (partial payment)
             const outstanding = finalTotalUSD - finalPaidAmountUSD;
-            const isCreditSale = outstanding > 0.05; // Tolerance for rounding
+            const isCreditSale = outstanding > 0.01; // Even 1 AFG outstanding requires due date
             
             // Validate due date for ANY credit sales (partial payment or CREDIT method)
             if (isCreditSale && !dueDate) {

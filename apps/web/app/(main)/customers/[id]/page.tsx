@@ -11,6 +11,7 @@ import { useSettingsStore } from '../../../../lib/settingsStore';
 export default function CustomerDetailsPage({ params }: { params: { id: string } }) {
     const router = useRouter();
     const [customer, setCustomer] = useState<any>(null);
+    const [creditHistory, setCreditHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -18,6 +19,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
 
     useEffect(() => {
         fetchCustomer();
+        fetchCreditHistory();
         fetchExchangeRate();
     }, [params.id]);
 
@@ -29,6 +31,15 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
             console.error('Failed to fetch customer', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchCreditHistory = async () => {
+        try {
+            const res = await api.get(`/debts`, { params: { customerId: params.id } });
+            setCreditHistory(res.data);
+        } catch (error) {
+            console.error('Failed to fetch credit history', error);
         }
     };
 
@@ -122,6 +133,67 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                     </div>
                 </div>
             </div>
+
+            {/* Credit History Section */}
+            {creditHistory.length > 0 && (
+                <>
+                    <h2 className="text-xl font-bold text-gray-800 mb-4 mt-8">Credit/Debt History</h2>
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mb-8">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50 text-gray-500 text-sm border-b">
+                                <tr>
+                                    <th className="px-6 py-4 font-medium">Date</th>
+                                    <th className="px-6 py-4 font-medium">Description</th>
+                                    <th className="px-6 py-4 font-medium">Original (AFG)</th>
+                                    <th className="px-6 py-4 font-medium">Paid (AFG)</th>
+                                    <th className="px-6 py-4 font-medium">Remaining (AFG)</th>
+                                    <th className="px-6 py-4 font-medium">Due Date</th>
+                                    <th className="px-6 py-4 font-medium">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {creditHistory.map((credit: any) => (
+                                    <tr key={credit.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {new Date(credit.createdAt).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-gray-900 font-medium">
+                                                {credit.notes || 'Credit Sale'}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                Invoice: {credit.invoice?.invoiceNumber}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-gray-900">
+                                            ؋{Math.floor(Number(credit.originalAmountAFN)).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-green-600 font-medium">
+                                            ؋{Math.floor(Number(credit.paidAmountAFN || 0)).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-red-600">
+                                            ؋{Math.floor(Number(credit.remainingBalanceAFN || 0)).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {new Date(credit.dueDate).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                                credit.status === 'SETTLED' ? 'bg-green-100 text-green-700' :
+                                                credit.status === 'OVERDUE' ? 'bg-red-100 text-red-700' :
+                                                credit.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>
+                                                {credit.status.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )}
 
             <h2 className="text-xl font-bold text-gray-800 mb-4">Transaction History</h2>
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
