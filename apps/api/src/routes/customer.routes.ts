@@ -380,36 +380,49 @@ router.delete('/:id', authenticate, authorize([Role.ADMIN]), async (req: AuthReq
 
         // Cascade Delete: Delete related records first
         await prisma.$transaction(async (tx) => {
-            // 1. Find all invoices to cleanup their items
+            // 1. Find all invoices and credit entries to cleanup
             const invoices = await tx.invoice.findMany({
                 where: { customerId: customerId },
                 select: { id: true }
             });
             const invoiceIds = invoices.map(inv => inv.id);
 
-            // 2. Delete Invoice Items
+            const creditEntries = await tx.creditEntry.findMany({
+                where: { customerId: customerId },
+                select: { id: true }
+            });
+            const creditEntryIds = creditEntries.map(ce => ce.id);
+
+            // 2. Delete Debt Payments first (foreign key to creditEntry)
+            if (creditEntryIds.length > 0) {
+                await tx.debtPayment.deleteMany({
+                    where: { creditEntryId: { in: creditEntryIds } }
+                });
+            }
+
+            // 3. Delete Invoice Items
             if (invoiceIds.length > 0) {
                 await tx.invoiceItem.deleteMany({
                     where: { invoiceId: { in: invoiceIds } }
                 });
             }
 
-            // 3. Delete Credit Entries
+            // 4. Delete Credit Entries
             await tx.creditEntry.deleteMany({
                 where: { customerId: customerId }
             });
 
-            // 4. Delete Payments
+            // 5. Delete Payments
             await tx.payment.deleteMany({
                 where: { customerId: customerId }
             });
 
-            // 5. Delete Invoices
+            // 6. Delete Invoices
             await tx.invoice.deleteMany({
                 where: { customerId: customerId }
             });
 
-            // 6. Delete Customer
+            // 7. Delete Customer
             await tx.customer.delete({
                 where: { id: customerId }
             });
@@ -449,26 +462,39 @@ router.post('/bulk-delete', authenticate, authorize([Role.ADMIN]), async (req: A
             for (const id of ids) {
                 // Cascade Delete for each ID
 
-                // 1. Find invoices
+                // 1. Find invoices and credit entries
                 const invoices = await tx.invoice.findMany({
                     where: { customerId: id },
                     select: { id: true }
                 });
                 const invoiceIds = invoices.map(inv => inv.id);
 
-                // 2. Delete Items
+                const creditEntries = await tx.creditEntry.findMany({
+                    where: { customerId: id },
+                    select: { id: true }
+                });
+                const creditEntryIds = creditEntries.map(ce => ce.id);
+
+                // 2. Delete Debt Payments first
+                if (creditEntryIds.length > 0) {
+                    await tx.debtPayment.deleteMany({
+                        where: { creditEntryId: { in: creditEntryIds } }
+                    });
+                }
+
+                // 3. Delete Invoice Items
                 if (invoiceIds.length > 0) {
                     await tx.invoiceItem.deleteMany({
                         where: { invoiceId: { in: invoiceIds } }
                     });
                 }
 
-                // 3. Delete dependencies
+                // 4. Delete dependencies
                 await tx.creditEntry.deleteMany({ where: { customerId: id } });
                 await tx.payment.deleteMany({ where: { customerId: id } });
                 await tx.invoice.deleteMany({ where: { customerId: id } });
 
-                // 4. Delete Customer
+                // 5. Delete Customer
                 await tx.customer.delete({ where: { id } });
 
                 deletedCount++;

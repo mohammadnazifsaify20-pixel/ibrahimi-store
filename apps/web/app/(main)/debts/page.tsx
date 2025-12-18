@@ -93,6 +93,16 @@ export default function DebtorsPage() {
     const [customerHistory, setCustomerHistory] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     
+    // Invoices modal state
+    const [showInvoicesModal, setShowInvoicesModal] = useState(false);
+    const [lendingInvoices, setLendingInvoices] = useState<any[]>([]);
+    const [invoicesLoading, setInvoicesLoading] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+    const [showInvoiceDeleteModal, setShowInvoiceDeleteModal] = useState(false);
+    const [invoiceDeletePassword, setInvoiceDeletePassword] = useState('');
+    const [invoiceDeleteLoading, setInvoiceDeleteLoading] = useState(false);
+    const [invoiceDeleteError, setInvoiceDeleteError] = useState('');
+    
     // Lending form
     const [customers, setCustomers] = useState<any[]>([]);
     const [customerSearch, setCustomerSearch] = useState('');
@@ -511,6 +521,71 @@ export default function DebtorsPage() {
         fetchCustomerHistory(customer.id);
     };
     
+    const fetchLendingInvoices = async () => {
+        setInvoicesLoading(true);
+        try {
+            // Fetch all invoices that start with LEND-
+            const response = await api.get('/invoices');
+            const allInvoices = response.data;
+            const lendingOnly = allInvoices.filter((inv: any) => 
+                inv.invoiceNumber?.startsWith('LEND-')
+            );
+            setLendingInvoices(lendingOnly);
+        } catch (error) {
+            console.error('Failed to fetch lending invoices:', error);
+            setLendingInvoices([]);
+        } finally {
+            setInvoicesLoading(false);
+        }
+    };
+    
+    const handleShowInvoices = () => {
+        setShowInvoicesModal(true);
+        fetchLendingInvoices();
+    };
+    
+    const handleDeleteInvoice = async () => {
+        if (!selectedInvoice) {
+            setInvoiceDeleteError('No invoice selected');
+            return;
+        }
+        
+        if (!invoiceDeletePassword) {
+            setInvoiceDeleteError('Admin password is required');
+            return;
+        }
+        
+        setInvoiceDeleteLoading(true);
+        setInvoiceDeleteError('');
+        
+        try {
+            // Find the credit entry for this invoice
+            const creditEntry = debts.find(d => d.invoice.invoiceNumber === selectedInvoice.invoiceNumber);
+            
+            if (creditEntry) {
+                // Delete via debt endpoint which handles balance restoration
+                await api.delete(`/debts/${creditEntry.id}`, {
+                    data: { adminPassword: invoiceDeletePassword }
+                });
+            } else {
+                // If no credit entry, just delete the invoice (shouldn't happen normally)
+                await api.delete(`/invoices/${selectedInvoice.id}`);
+            }
+            
+            setShowInvoiceDeleteModal(false);
+            setInvoiceDeletePassword('');
+            setSelectedInvoice(null);
+            await fetchLendingInvoices();
+            await fetchData();
+            await fetchShopBalance();
+            alert('Invoice deleted successfully! Shop balance has been restored.');
+        } catch (error: any) {
+            setInvoiceDeleteError(error.response?.data?.message || 'Failed to delete - Check your admin password');
+        } finally {
+            setInvoiceDeleteLoading(false);
+        }
+    };
+    
     const handleLending = async () => {
         if (!selectedCustomer || !lendAmount || !lendDueDate) {
             setLendError('Please fill in all required fields');
@@ -641,6 +716,12 @@ export default function DebtorsPage() {
                     >
                         <Plus size={20} />
                         Lend Money
+                    </button>
+                    <button
+                        onClick={handleShowInvoices}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium"
+                    >
+                        📄 View Invoices
                     </button>
                 </div>
             </div>
@@ -1744,6 +1825,230 @@ export default function DebtorsPage() {
                                     </p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Lending Invoices Modal */}
+            {showInvoicesModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="flex items-center justify-between border-b p-6">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-900">
+                                    📄 Lending Invoices
+                                </h3>
+                                <p className="text-gray-600 mt-1">
+                                    All invoices for money lending transactions
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowInvoicesModal(false);
+                                    setLendingInvoices([]);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {invoicesLoading ? (
+                                <div className="flex items-center justify-center h-32">
+                                    <div className="text-gray-500">Loading invoices...</div>
+                                </div>
+                            ) : lendingInvoices.length === 0 ? (
+                                <div className="text-center text-gray-500 py-8">
+                                    <AlertCircle size={48} className="mx-auto mb-4 text-gray-300" />
+                                    <p>No lending invoices found</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50 border-b-2 border-gray-200">
+                                            <tr>
+                                                <th className="text-left p-4 font-semibold text-gray-700">Invoice #</th>
+                                                <th className="text-left p-4 font-semibold text-gray-700">Customer</th>
+                                                <th className="text-left p-4 font-semibold text-gray-700">Date</th>
+                                                <th className="text-right p-4 font-semibold text-gray-700">Total (AFN)</th>
+                                                <th className="text-right p-4 font-semibold text-gray-700">Total (USD)</th>
+                                                <th className="text-center p-4 font-semibold text-gray-700">Status</th>
+                                                <th className="text-center p-4 font-semibold text-gray-700">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {lendingInvoices.map((invoice) => {
+                                                const debt = debts.find(d => d.invoice.invoiceNumber === invoice.invoiceNumber);
+                                                const isPaid = debt?.status === 'SETTLED';
+                                                
+                                                return (
+                                                    <tr key={invoice.id} className="hover:bg-gray-50">
+                                                        <td className="p-4">
+                                                            <span className="font-mono text-sm bg-orange-100 px-2 py-1 rounded">
+                                                                {invoice.invoiceNumber}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-4">
+                                                            <div>
+                                                                <p className="font-medium text-gray-900">
+                                                                    {invoice.customer?.name || 'Unknown'}
+                                                                </p>
+                                                                {invoice.customer?.displayId && (
+                                                                    <p className="text-xs text-gray-500 font-mono">
+                                                                        {invoice.customer.displayId}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4 text-gray-600">
+                                                            {new Date(invoice.date).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="p-4 text-right font-bold text-gray-900">
+                                                            ؋{invoice.totalAmountAFN?.toLocaleString() || '0'}
+                                                        </td>
+                                                        <td className="p-4 text-right font-medium text-gray-600">
+                                                            ${invoice.totalAmount?.toFixed(2) || '0.00'}
+                                                        </td>
+                                                        <td className="p-4 text-center">
+                                                            {debt ? (
+                                                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${
+                                                                    isPaid ? 'bg-green-100 text-green-700 border-green-300' :
+                                                                    debt.status === 'OVERDUE' ? 'bg-red-100 text-red-700 border-red-300' :
+                                                                    debt.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                                                                    'bg-blue-100 text-blue-700 border-blue-300'
+                                                                }`}>
+                                                                    {isPaid ? 'PAID' : debt.status.replace('_', ' ')}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-gray-400 text-xs">-</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="p-4">
+                                                            <div className="flex gap-2 justify-center">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (debt) {
+                                                                            handleShowHistory(debt.customer);
+                                                                        }
+                                                                    }}
+                                                                    disabled={!debt}
+                                                                    className="bg-purple-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    View Details
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedInvoice(invoice);
+                                                                        setShowInvoiceDeleteModal(true);
+                                                                    }}
+                                                                    className="bg-red-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-red-700 transition-colors"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="border-t p-4 bg-gray-50">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-600">Total Invoices</p>
+                                    <p className="text-2xl font-bold text-gray-900">{lendingInvoices.length}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600">Total Amount (AFN)</p>
+                                    <p className="text-2xl font-bold text-orange-600">
+                                        ؋{lendingInvoices
+                                            .reduce((sum, inv) => sum + (inv.totalAmountAFN || 0), 0)
+                                            .toLocaleString()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600">Total Amount (USD)</p>
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        ${lendingInvoices
+                                            .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
+                                            .toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Invoice Delete Confirmation Modal */}
+            {showInvoiceDeleteModal && selectedInvoice && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                ⚠️ Delete Invoice
+                            </h3>
+                        </div>
+
+                        {invoiceDeleteError && (
+                            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                                {invoiceDeleteError}
+                            </div>
+                        )}
+
+                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                            <p className="text-sm text-yellow-800 font-medium mb-2">
+                                You are about to delete:
+                            </p>
+                            <ul className="text-sm text-yellow-900 space-y-1">
+                                <li>• Invoice: <span className="font-mono font-bold">{selectedInvoice.invoiceNumber}</span></li>
+                                <li>• Customer: <span className="font-bold">{selectedInvoice.customer?.name}</span></li>
+                                <li>• Amount: <span className="font-bold">؋{selectedInvoice.totalAmountAFN?.toLocaleString()}</span></li>
+                                <li className="text-green-700 font-medium">✓ Shop balance will be restored</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Admin Password <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="password"
+                                value={invoiceDeletePassword}
+                                onChange={(e) => setInvoiceDeletePassword(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleDeleteInvoice()}
+                                placeholder="Enter admin password"
+                                className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => {
+                                    setShowInvoiceDeleteModal(false);
+                                    setSelectedInvoice(null);
+                                    setInvoiceDeletePassword('');
+                                    setInvoiceDeleteError('');
+                                }}
+                                disabled={invoiceDeleteLoading}
+                                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteInvoice}
+                                disabled={invoiceDeleteLoading || !invoiceDeletePassword}
+                                className="flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition-colors disabled:opacity-50"
+                            >
+                                {invoiceDeleteLoading ? 'Deleting...' : '🗑️ Delete Invoice'}
+                            </button>
                         </div>
                     </div>
                 </div>
