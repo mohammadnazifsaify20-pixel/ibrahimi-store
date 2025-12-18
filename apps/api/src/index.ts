@@ -12,6 +12,7 @@ import aiRoutes from './routes/ai.routes';
 import settingsRoutes from './routes/settings.routes';
 import expenseRoutes from './routes/expense.routes';
 import debtRoutes from './routes/debt.routes';
+import depositRoutes from './routes/deposit.routes';
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -36,6 +37,7 @@ app.use('/ai', aiRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/expenses', expenseRoutes);
 app.use('/', debtRoutes); // Debt management routes
+app.use('/deposits', depositRoutes); // Customer deposit routes
 
 app.get("/", (req, res) => {
     res.json({ message: "Hello from API" });

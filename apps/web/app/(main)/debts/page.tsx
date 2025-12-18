@@ -124,6 +124,21 @@ export default function DebtorsPage() {
     const [balanceError, setBalanceError] = useState('');
     const [balanceLoading, setBalanceLoading] = useState(false);
     
+    // Customer deposits state
+    const [deposits, setDeposits] = useState<any[]>([]);
+    const [showDepositModal, setShowDepositModal] = useState(false);
+    const [showDepositsListModal, setShowDepositsListModal] = useState(false);
+    const [depositAmount, setDepositAmount] = useState('');
+    const [depositNotes, setDepositNotes] = useState('');
+    const [depositLoading, setDepositLoading] = useState(false);
+    const [depositError, setDepositError] = useState('');
+    const [selectedDeposit, setSelectedDeposit] = useState<any>(null);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [withdrawNotes, setWithdrawNotes] = useState('');
+    const [withdrawLoading, setWithdrawLoading] = useState(false);
+    const [withdrawError, setWithdrawError] = useState('');
+    
     const fetchShopBalance = async () => {
         try {
             const response = await api.get('/settings/shop-balance');
@@ -150,7 +165,7 @@ export default function DebtorsPage() {
         setBalanceError('');
         
         try {
-            await api.post('/settings/shop-balance', { balance: balanceAmount });
+            await api.post('/settings/shop-balance', { balance: balanceAmount, password: adminPassword });
             setShopBalance(balanceAmount);
             setShowBalanceModal(false);
             setAdminPassword('');
@@ -160,6 +175,94 @@ export default function DebtorsPage() {
             setBalanceError(error.response?.data?.message || 'Failed to update balance');
         } finally {
             setBalanceLoading(false);
+        }
+    };
+    
+    const fetchDeposits = async () => {
+        try {
+            const res = await api.get('/deposits');
+            setDeposits(res.data);
+        } catch (error) {
+            console.error('Failed to fetch deposits:', error);
+        }
+    };
+    
+    const handleCreateDeposit = async () => {
+        if (!selectedCustomer || !depositAmount) {
+            setDepositError('Please select customer and enter amount');
+            return;
+        }
+        
+        const amountAFN = Number(depositAmount);
+        if (amountAFN <= 0) {
+            setDepositError('Invalid amount');
+            return;
+        }
+        
+        setDepositLoading(true);
+        setDepositError('');
+        
+        try {
+            await api.post('/deposits', {
+                customerId: selectedCustomer.id,
+                amountAFN,
+                notes: depositNotes || 'Customer deposit for safekeeping'
+            });
+            
+            // Refresh data
+            await Promise.all([fetchDeposits(), fetchShopBalance()]);
+            
+            // Close modal and reset
+            setShowDepositModal(false);
+            setSelectedCustomer(null);
+            setCustomerSearch('');
+            setDepositAmount('');
+            setDepositNotes('');
+        } catch (error: any) {
+            setDepositError(error.response?.data?.message || 'Failed to create deposit');
+        } finally {
+            setDepositLoading(false);
+        }
+    };
+    
+    const handleWithdraw = async () => {
+        if (!selectedDeposit || !withdrawAmount) {
+            setWithdrawError('Please enter withdrawal amount');
+            return;
+        }
+        
+        const amountAFN = Number(withdrawAmount);
+        if (amountAFN <= 0) {
+            setWithdrawError('Invalid amount');
+            return;
+        }
+        
+        if (amountAFN > Number(selectedDeposit.remainingAmountAFN)) {
+            setWithdrawError(`Cannot withdraw more than remaining balance: ؋${Number(selectedDeposit.remainingAmountAFN).toLocaleString()}`);
+            return;
+        }
+        
+        setWithdrawLoading(true);
+        setWithdrawError('');
+        
+        try {
+            await api.post(`/deposits/${selectedDeposit.id}/withdraw`, {
+                amountAFN,
+                notes: withdrawNotes
+            });
+            
+            // Refresh data
+            await Promise.all([fetchDeposits(), fetchShopBalance()]);
+            
+            // Close modal and reset
+            setShowWithdrawModal(false);
+            setSelectedDeposit(null);
+            setWithdrawAmount('');
+            setWithdrawNotes('');
+        } catch (error: any) {
+            setWithdrawError(error.response?.data?.message || 'Failed to process withdrawal');
+        } finally {
+            setWithdrawLoading(false);
         }
     };
     
@@ -340,6 +443,7 @@ export default function DebtorsPage() {
     useEffect(() => {
         fetchCustomers();
         fetchShopBalance();
+        fetchDeposits();
         fetchExchangeRate().catch(err => {
             console.error('Failed to fetch exchange rate, using default:', err);
         });
@@ -835,6 +939,22 @@ export default function DebtorsPage() {
                     >
                         <Plus size={20} />
                         Lend Money
+                    </button>
+                    <button
+                        onClick={() => {
+                            setShowDepositModal(true);
+                            setSelectedCustomer(null);
+                            setCustomerSearch('');
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                    >
+                        💰 Customer Deposit
+                    </button>
+                    <button
+                        onClick={() => setShowDepositsListModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
+                    >
+                        📋 View Deposits
                     </button>
                     <button
                         onClick={handleShowInvoices}
@@ -2264,6 +2384,347 @@ export default function DebtorsPage() {
                                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                             >
                                 🖨️ Print Receipt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Customer Deposit Modal */}
+            {showDepositModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b pb-4">
+                            <h3 className="text-xl font-bold text-gray-900">💰 Customer Deposit</h3>
+                            <button
+                                onClick={() => {
+                                    setShowDepositModal(false);
+                                    setSelectedCustomer(null);
+                                    setCustomerSearch('');
+                                    setDepositAmount('');
+                                    setDepositNotes('');
+                                    setDepositError('');
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {depositError && (
+                            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                                {depositError}
+                            </div>
+                        )}
+
+                        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4">
+                            <p className="text-sm text-indigo-700 font-medium">
+                                💡 Customer Safekeeping
+                            </p>
+                            <p className="text-xs text-indigo-600 mt-1">
+                                Customers can deposit money for safekeeping. Shop balance will increase.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Select Customer <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={customerSearch}
+                                    onChange={(e) => setCustomerSearch(e.target.value)}
+                                    onFocus={() => setCustomerSearch('')}
+                                    placeholder="Search customer by name or ID..."
+                                    className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                />
+                                {customerSearch && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
+                                        {customers
+                                            .filter(c =>
+                                                c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                                                c.displayId?.toLowerCase().includes(customerSearch.toLowerCase())
+                                            )
+                                            .map(customer => (
+                                                <div
+                                                    key={customer.id}
+                                                    onClick={() => {
+                                                        setSelectedCustomer(customer);
+                                                        setCustomerSearch(customer.name);
+                                                    }}
+                                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                >
+                                                    <p className="font-medium">{customer.name}</p>
+                                                    <p className="text-xs text-gray-500">ID: {customer.displayId || customer.id}</p>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+                            {selectedCustomer && (
+                                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                                    ✓ Selected: <span className="font-medium">{selectedCustomer.name}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Deposit Amount (AFN) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-3 text-gray-500 font-bold">؋</span>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    value={depositAmount}
+                                    onChange={(e) => setDepositAmount(e.target.value)}
+                                    className="w-full pl-8 pr-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    placeholder="50000"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Notes (Optional)
+                            </label>
+                            <textarea
+                                value={depositNotes}
+                                onChange={(e) => setDepositNotes(e.target.value)}
+                                className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                rows={3}
+                                placeholder="Any additional notes..."
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={() => {
+                                    setShowDepositModal(false);
+                                    setSelectedCustomer(null);
+                                    setCustomerSearch('');
+                                    setDepositAmount('');
+                                    setDepositNotes('');
+                                    setDepositError('');
+                                }}
+                                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCreateDeposit}
+                                disabled={depositLoading}
+                                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium disabled:opacity-50"
+                            >
+                                {depositLoading ? 'Creating...' : '💰 Create Deposit'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* View Deposits List Modal */}
+            {showDepositsListModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-900">📋 Customer Deposits</h3>
+                                <p className="text-sm text-gray-600 mt-1">Money held for safekeeping</p>
+                            </div>
+                            <button
+                                onClick={() => setShowDepositsListModal(false)}
+                                className="text-gray-400 hover:text-gray-600 text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            {deposits.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="text-6xl mb-4">💰</div>
+                                    <p className="text-gray-500">No deposits yet</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-gray-50 border-b-2">
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Deposit #</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Original</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Withdrawn</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Remaining</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {deposits.map((deposit) => (
+                                                <tr key={deposit.id} className="border-b hover:bg-gray-50">
+                                                    <td className="px-4 py-3">
+                                                        <span className="font-mono font-semibold text-indigo-600">
+                                                            {deposit.depositNumber}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div>
+                                                            <p className="font-medium">{deposit.customer.name}</p>
+                                                            <p className="text-xs text-gray-500">
+                                                                ID: {deposit.customer.displayId || deposit.customer.id}
+                                                            </p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 font-semibold text-gray-900">
+                                                        ؋{Number(deposit.originalAmountAFN).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-red-600 font-medium">
+                                                        {Number(deposit.withdrawnAmountAFN) > 0 
+                                                            ? `؋${Number(deposit.withdrawnAmountAFN).toLocaleString()}`
+                                                            : '-'
+                                                        }
+                                                    </td>
+                                                    <td className="px-4 py-3 font-semibold text-green-600">
+                                                        ؋{Number(deposit.remainingAmountAFN).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                            deposit.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+                                                            deposit.status === 'PARTIAL' ? 'bg-yellow-100 text-yellow-700' :
+                                                            'bg-gray-100 text-gray-700'
+                                                        }`}>
+                                                            {deposit.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                                        {new Date(deposit.depositDate).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {deposit.status !== 'WITHDRAWN' && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedDeposit(deposit);
+                                                                    setShowWithdrawModal(true);
+                                                                }}
+                                                                className="px-3 py-1 bg-teal-600 text-white rounded text-sm hover:bg-teal-700"
+                                                            >
+                                                                💵 Withdraw
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Withdraw Modal */}
+            {showWithdrawModal && selectedDeposit && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b pb-4">
+                            <h3 className="text-xl font-bold text-gray-900">💵 Withdraw from Deposit</h3>
+                            <button
+                                onClick={() => {
+                                    setShowWithdrawModal(false);
+                                    setSelectedDeposit(null);
+                                    setWithdrawAmount('');
+                                    setWithdrawNotes('');
+                                    setWithdrawError('');
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {withdrawError && (
+                            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                                {withdrawError}
+                            </div>
+                        )}
+
+                        <div className="bg-teal-50 border-2 border-teal-200 rounded-lg p-4 space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-sm text-teal-700">Deposit Number:</span>
+                                <span className="font-mono font-semibold">{selectedDeposit.depositNumber}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-sm text-teal-700">Customer:</span>
+                                <span className="font-medium">{selectedDeposit.customer.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-sm text-teal-700">Remaining Balance:</span>
+                                <span className="text-lg font-bold text-green-600">
+                                    ؋{Number(selectedDeposit.remainingAmountAFN).toLocaleString()}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Withdrawal Amount (AFN) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-3 text-gray-500 font-bold">؋</span>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    value={withdrawAmount}
+                                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                                    className="w-full pl-8 pr-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                                    placeholder={`Max: ${Number(selectedDeposit.remainingAmountAFN).toLocaleString()}`}
+                                />
+                            </div>
+                            <button
+                                onClick={() => setWithdrawAmount(selectedDeposit.remainingAmountAFN.toString())}
+                                className="mt-2 text-sm text-teal-600 hover:text-teal-700 font-medium"
+                            >
+                                Withdraw Full Amount
+                            </button>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Notes (Optional)
+                            </label>
+                            <textarea
+                                value={withdrawNotes}
+                                onChange={(e) => setWithdrawNotes(e.target.value)}
+                                className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none resize-none"
+                                rows={2}
+                                placeholder="Withdrawal reason..."
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={() => {
+                                    setShowWithdrawModal(false);
+                                    setSelectedDeposit(null);
+                                    setWithdrawAmount('');
+                                    setWithdrawNotes('');
+                                    setWithdrawError('');
+                                }}
+                                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleWithdraw}
+                                disabled={withdrawLoading}
+                                className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium disabled:opacity-50"
+                            >
+                                {withdrawLoading ? 'Processing...' : '💵 Withdraw'}
                             </button>
                         </div>
                     </div>

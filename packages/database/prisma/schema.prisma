@@ -105,6 +105,7 @@ model Customer {
   invoices      Invoice[]
   payments      Payment[]
   creditEntries CreditEntry[]
+  deposits      CustomerDeposit[]
 }
 
 enum InvoiceStatus {
@@ -233,4 +234,42 @@ model SystemSetting {
   value     String
   description String?
   updatedAt DateTime @updatedAt
+}
+
+enum DepositStatus {
+  ACTIVE    // Money is deposited and held
+  WITHDRAWN // Customer has withdrawn the money
+  PARTIAL   // Partially withdrawn
+}
+
+model CustomerDeposit {
+  id                  Int           @id @default(autoincrement())
+  customerId          Int           @map("customer_id")
+  customer            Customer      @relation(fields: [customerId], references: [id])
+  
+  depositNumber       String        @unique @map("deposit_number") // DEP-0001
+  originalAmountAFN   Decimal       @map("original_amount_afn") @db.Decimal(10, 2)
+  withdrawnAmountAFN  Decimal       @default(0) @map("withdrawn_amount_afn") @db.Decimal(10, 2)
+  remainingAmountAFN  Decimal       @map("remaining_amount_afn") @db.Decimal(10, 2)
+  
+  status              DepositStatus @default(ACTIVE)
+  notes               String?
+  
+  depositDate         DateTime      @default(now()) @map("deposit_date")
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  
+  withdrawals         DepositWithdrawal[]
+}
+
+model DepositWithdrawal {
+  id            Int             @id @default(autoincrement())
+  depositId     Int             @map("deposit_id")
+  deposit       CustomerDeposit @relation(fields: [depositId], references: [id])
+  
+  amountAFN     Decimal         @map("amount_afn") @db.Decimal(10, 2)
+  notes         String?
+  
+  withdrawalDate DateTime       @default(now()) @map("withdrawal_date")
+  createdAt      DateTime       @default(now())
 }

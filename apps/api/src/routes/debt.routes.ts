@@ -302,19 +302,23 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
                 throw new Error('This debt is already settled');
             }
             
-            // Validate payment amount
+            // Allow paying up to remaining balance (using >= instead of > to allow exact payoff)
             if (amount > Number(debt.remainingBalance)) {
                 throw new Error('Payment amount exceeds remaining balance');
             }
             
+            // If paying full amount, ensure we don't leave tiny rounding errors
+            const remainingBalance = Number(debt.remainingBalance);
+            const actualPayment = (Math.abs(amount - remainingBalance) < 0.01) ? remainingBalance : amount;
+            
             // Calculate AFN amount if not provided
-            const finalAmountAFN = amountAFN || (amount * Number(debt.invoice.exchangeRate));
+            const finalAmountAFN = amountAFN || (actualPayment * Number(debt.invoice.exchangeRate));
             
             // Record the payment
             const payment = await tx.debtPayment.create({
                 data: {
                     creditEntryId: debt.id,
-                    amount,
+                    amount: actualPayment,
                     amountAFN: finalAmountAFN,
                     paymentMethod,
                     reference,
@@ -323,9 +327,9 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
             });
             
             // Update debt entry
-            const newPaidAmount = Number(debt.paidAmount) + amount;
+            const newPaidAmount = Number(debt.paidAmount) + actualPayment;
             const newPaidAmountAFN = Number(debt.paidAmountAFN || 0) + finalAmountAFN;
-            const newRemainingBalance = Number(debt.remainingBalance) - amount;
+            const newRemainingBalance = Number(debt.remainingBalance) - actualPayment;
             const newRemainingBalanceAFN = Number(debt.remainingBalanceAFN || 0) - finalAmountAFN;
             
             // Calculate new status
