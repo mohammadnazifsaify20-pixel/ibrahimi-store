@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle, Plus, Search, X } from 'lucide-react';
 import api from '../../../lib/api';
 
-// Version: 2024-12-18-v2 - Force cache refresh
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Version: 2024-12-18-v3 - No cache
 interface Debt {
     id: number;
     customer: {
