@@ -607,11 +607,14 @@ export default function DebtorsPage() {
             setShowDeleteModal(false);
             setDeletePassword('');
             setSelectedDebt(null);
-            await fetchData();
-            await fetchShopBalance(); // Refresh balance as it will be restored
+            await Promise.all([fetchData(), fetchShopBalance()]);
             alert('Lending entry deleted successfully! Shop balance has been restored.');
         } catch (error: any) {
-            setDeleteError(error.response?.data?.message || 'Failed to delete - Check your password');
+            console.error('Delete error:', error.response?.data);
+            const errorMessage = error.response?.data?.message || 'Failed to delete';
+            setDeleteError(errorMessage === 'Invalid password' 
+                ? 'Invalid password - Make sure you\'re using your login password (same as when you login)' 
+                : errorMessage);
         } finally {
             setDeleteLoading(false);
         }
@@ -1908,9 +1911,31 @@ export default function DebtorsPage() {
                                                                         {payment.paymentMethod}
                                                                     </span>
                                                                 </div>
-                                                                <span className="font-bold text-green-600">
-                                                                    ؋{payment.amountAFN.toLocaleString()}
-                                                                </span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-bold text-green-600">
+                                                                        ؋{payment.amountAFN.toLocaleString()}
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const paymentData = {
+                                                                                customerName: debt.customer.name,
+                                                                                customerId: debt.customer.displayId,
+                                                                                invoiceNumber: debt.invoice.invoiceNumber,
+                                                                                paidAmount: payment.amountAFN,
+                                                                                paymentMethod: payment.paymentMethod,
+                                                                                originalAmount: debt.originalAmountAFN,
+                                                                                totalPaid: debt.paidAmountAFN,
+                                                                                remaining: debt.remainingBalanceAFN,
+                                                                                notes: payment.notes || ''
+                                                                            };
+                                                                            printPaymentReceipt(paymentData);
+                                                                        }}
+                                                                        className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded hover:bg-blue-50"
+                                                                        title="Print Receipt"
+                                                                    >
+                                                                        🖨️
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1947,7 +1972,7 @@ export default function DebtorsPage() {
                                     <p className="text-sm text-gray-600">Total Paid</p>
                                     <p className="text-2xl font-bold text-green-600">
                                         ؋{customerHistory
-                                            .reduce((sum, d) => sum + d.paidAmountAFN, 0)
+                                            .reduce((sum, d) => sum + Number(d.paidAmountAFN || 0), 0)
                                             .toLocaleString()}
                                     </p>
                                 </div>
