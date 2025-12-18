@@ -60,6 +60,8 @@ export default function DebtorsPage() {
     const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showLendingModal, setShowLendingModal] = useState(false);
+    const [showDueSoonAlert, setShowDueSoonAlert] = useState(false);
+    const [dueSoonDebts, setDueSoonDebts] = useState<Debt[]>([]);
     const [error, setError] = useState<string | null>(null);
     
     // Payment form
@@ -110,12 +112,150 @@ export default function DebtorsPage() {
             
             setDebts(filteredDebts);
             setSummary(summaryRes.data);
+            
+            // Check for due soon debts and show alert
+            const dueSoon = debtsRes.data.filter((d: Debt) => d.status === 'DUE_SOON');
+            if (dueSoon.length > 0) {
+                setDueSoonDebts(dueSoon);
+                setShowDueSoonAlert(true);
+            }
         } catch (error: any) {
             console.error('Failed to fetch debts:', error);
             setError(error.response?.data?.message || 'Failed to load debts data');
         } finally {
             setLoading(false);
         }
+    };
+
+    const printDebtAgreement = (debt: Debt) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+        
+        const agreementHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Debt Agreement - ${debt.customer.name}</title>
+                <style>
+                    @page { size: A4; margin: 1cm; }
+                    body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #333; padding-bottom: 15px; }
+                    .header h1 { margin: 0; font-size: 24px; color: #1a1a1a; }
+                    .header h2 { margin: 5px 0; font-size: 20px; color: #333; }
+                    .section { margin: 20px 0; }
+                    .row { display: flex; justify-content: space-between; margin: 10px 0; }
+                    .label { font-weight: bold; color: #333; }
+                    .value { color: #000; }
+                    .bilingual { display: flex; justify-content: space-between; margin: 15px 0; padding: 15px; background: #f9f9f9; border-radius: 5px; }
+                    .english { flex: 1; padding-right: 20px; border-right: 2px solid #ddd; }
+                    .dari { flex: 1; padding-left: 20px; text-align: right; direction: rtl; }
+                    .amount-box { text-align: center; padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 5px; margin: 20px 0; }
+                    .amount-box .amount { font-size: 32px; font-weight: bold; color: #d9534f; }
+                    .terms { margin: 20px 0; padding: 15px; background: #f0f0f0; border-left: 4px solid #0066cc; }
+                    .signature-section { margin-top: 50px; display: flex; justify-content: space-between; }
+                    .signature-box { width: 45%; }
+                    .signature-line { border-top: 2px solid #000; margin-top: 60px; padding-top: 5px; text-align: center; }
+                    .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 15px; }
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>IBRAHIMI STORE</h1>
+                    <h2>Debt Agreement / قرضه نامه</h2>
+                </div>
+
+                <div class="section">
+                    <div class="row">
+                        <div><span class="label">Agreement No:</span> <span class="value">${debt.invoice.invoiceNumber}</span></div>
+                        <div><span class="label">تاریخ:</span> <span class="value">${new Date(debt.createdAt).toLocaleDateString('fa-AF')}</span></div>
+                    </div>
+                    <div class="row">
+                        <div><span class="label">Date:</span> <span class="value">${new Date(debt.createdAt).toLocaleDateString()}</span></div>
+                    </div>
+                </div>
+
+                <div class="bilingual">
+                    <div class="english">
+                        <h3>Borrower Information</h3>
+                        <p><strong>Name:</strong> ${debt.customer.name}</p>
+                        ${debt.customer.phone ? `<p><strong>Phone:</strong> ${debt.customer.phone}</p>` : ''}
+                        ${debt.customer.displayId ? `<p><strong>ID:</strong> ${debt.customer.displayId}</p>` : ''}
+                    </div>
+                    <div class="dari">
+                        <h3>معلومات قرض گیرنده</h3>
+                        <p><strong>نام:</strong> ${debt.customer.name}</p>
+                        ${debt.customer.phone ? `<p><strong>تلیفون:</strong> ${debt.customer.phone}</p>` : ''}
+                        ${debt.customer.displayId ? `<p><strong>شناسنامه:</strong> ${debt.customer.displayId}</p>` : ''}
+                    </div>
+                </div>
+
+                <div class="amount-box">
+                    <div><strong>LOAN AMOUNT / مبلغ قرض</strong></div>
+                    <div class="amount">؋ ${Math.floor(Number(debt.originalAmountAFN) || 0).toLocaleString()}</div>
+                    <div style="margin-top: 10px; font-size: 18px;">$ ${(Number(debt.originalAmount) || 0).toFixed(2)} USD</div>
+                </div>
+
+                <div class="bilingual terms">
+                    <div class="english">
+                        <h3>⚠️ TERMS AND CONDITIONS</h3>
+                        <p><strong>1. DUE DATE:</strong> ${new Date(debt.dueDate).toLocaleDateString()}</p>
+                        <p><strong>2. PAYMENT:</strong> The borrower agrees to repay the full amount on or before the due date.</p>
+                        <p><strong>3. RESPONSIBILITY:</strong> ${debt.customer.name} is fully responsible for bringing the exact payment on the due date. <strong>NO DELAYS ACCEPTED.</strong></p>
+                        <p><strong>4. CONSEQUENCES:</strong> Late payment may result in additional charges and restrictions.</p>
+                        ${debt.notes ? `<p><strong>5. NOTES:</strong> ${debt.notes}</p>` : ''}
+                    </div>
+                    <div class="dari">
+                        <h3>⚠️ شرایط و احکام</h3>
+                        <p><strong>۱. تاریخ سررسید:</strong> ${new Date(debt.dueDate).toLocaleDateString('fa-AF')}</p>
+                        <p><strong>۲. پرداخت:</strong> قرض گیرنده موافقه میکند که مبلغ کامل را در یا قبل از تاریخ سررسید پرداخت نماید.</p>
+                        <p><strong>۳. مسئولیت:</strong> ${debt.customer.name} کاملاً مسئول است که مبلغ دقیق را در تاریخ سررسید بیاورد. <strong>هیچ تاخیر قابل قبول نیست.</strong></p>
+                        <p><strong>۴. عواقب:</strong> دیر پرداخت ممکن منجر به اضافه چارج و محدودیت ها شود.</p>
+                        ${debt.notes ? `<p><strong>۵. یادداشت:</strong> ${debt.notes}</p>` : ''}
+                    </div>
+                </div>
+
+                <div class="signature-section">
+                    <div class="signature-box">
+                        <div class="signature-line">
+                            <strong>Lender Signature / امضای قرض دهنده</strong><br>
+                            <small>IBRAHIMI STORE</small>
+                        </div>
+                        <div style="text-align: center; margin-top: 10px;">
+                            Date: ${new Date().toLocaleDateString()}
+                        </div>
+                    </div>
+                    <div class="signature-box">
+                        <div class="signature-line">
+                            <strong>Borrower Signature / امضای قرض گیرنده</strong><br>
+                            <small>${debt.customer.name}</small>
+                        </div>
+                        <div style="text-align: center; margin-top: 10px;">
+                            Date: ${new Date().toLocaleDateString()}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p><strong>IMPORTANT NOTICE / اطلاعیه مهم:</strong></p>
+                    <p>This is a legal agreement. The borrower must return the full amount on the exact due date.<br>
+                    این یک قرارداد قانونی است. قرض گیرنده باید مبلغ کامل را در تاریخ سررسید دقیق برگرداند.</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="padding: 10px 30px; background: #0066cc; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Print Agreement</button>
+                    <button onclick="window.close()" style="padding: 10px 30px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-left: 10px;">Close</button>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        printWindow.document.write(agreementHTML);
+        printWindow.document.close();
     };
 
     useEffect(() => {
@@ -512,6 +652,13 @@ export default function DebtorsPage() {
                                                             >
                                                                 Update Date
                                                             </button>
+                                                            <button
+                                                                onClick={() => printDebtAgreement(debt)}
+                                                                className="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                                                                title="Print Debt Agreement"
+                                                            >
+                                                                📄 Agreement
+                                                            </button>
                                                         </>
                                                     )}
                                                 </div>
@@ -834,6 +981,101 @@ export default function DebtorsPage() {
                                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                             >
                                 {dueDateLoading ? 'Updating...' : 'Update Date'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Due Soon Alert Modal - Dari */}
+            {showDueSoonAlert && dueSoonDebts.length > 0 && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <AlertTriangle className="text-yellow-600" size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900">⚠️ هشدار! تاریخ سررسید نزدیک است</h3>
+                                    <p className="text-sm text-gray-600">Due Date Alert - Payment Required Soon</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowDueSoonAlert(false)}
+                                className="text-gray-400 hover:text-gray-600 text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
+                            <p className="text-center text-lg font-bold text-yellow-900 mb-2" style={{ direction: 'rtl' }}>
+                                🔔 مشتریان ذیل باید امروز یا فردا پرداخت نمایند
+                            </p>
+                            <p className="text-center text-sm text-yellow-800">
+                                The following customers must pay today or tomorrow
+                            </p>
+                        </div>
+
+                        <div className="max-h-96 overflow-y-auto space-y-3">
+                            {dueSoonDebts.map((debt) => (
+                                <div key={debt.id} className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-lg p-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1" style={{ direction: 'rtl', textAlign: 'right' }}>
+                                            <p className="text-lg font-bold text-gray-900 mb-1">
+                                                📌 مشتری: {debt.customer.name}
+                                            </p>
+                                            <p className="text-xl font-bold text-red-600 mb-2">
+                                                💰 مبلغ: ؋{Math.floor(Number(debt.remainingBalanceAFN) || 0).toLocaleString()}
+                                            </p>
+                                            <p className="text-sm text-gray-700 mb-1">
+                                                📅 تاریخ سررسید: {new Date(debt.dueDate).toLocaleDateString('fa-AF')}
+                                            </p>
+                                            <div className="mt-3 p-3 bg-white rounded border-r-4 border-red-500">
+                                                <p className="text-sm font-bold text-red-900">
+                                                    ⚠️ پیام مهم: {debt.customer.name} باید در تاریخ سررسید پرداخت نماید. حتماً پول را دریافت نمایید!
+                                                </p>
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    Customer {debt.customer.name} needs to pay on due date. Make sure you receive the payment!
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-2">
+                                                <Clock className="text-red-600" size={32} />
+                                            </div>
+                                            <p className="text-xs font-bold text-red-600">
+                                                {getDaysUntilDue(debt.dueDate) === 0 ? 'امروز' : 'فردا'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {debt.customer.phone && (
+                                        <div className="mt-3 pt-3 border-t border-red-200">
+                                            <p className="text-sm text-gray-600">
+                                                📞 تماس: <a href={`tel:${debt.customer.phone}`} className="font-bold text-blue-600 hover:underline">{debt.customer.phone}</a>
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3 pt-4 border-t">
+                            <button
+                                onClick={() => setShowDueSoonAlert(false)}
+                                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors"
+                            >
+                                بستن / Close
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowDueSoonAlert(false);
+                                    setFilter('due_soon');
+                                }}
+                                className="flex-1 bg-yellow-600 text-white py-3 rounded-lg font-bold hover:bg-yellow-700 transition-colors"
+                            >
+                                نمایش همه / View All
                             </button>
                         </div>
                     </div>
