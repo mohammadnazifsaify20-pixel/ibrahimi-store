@@ -71,6 +71,8 @@ export default function DebtorsPage() {
     const [paymentNotes, setPaymentNotes] = useState('');
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [paymentError, setPaymentError] = useState('');
+    const [lastPayment, setLastPayment] = useState<any>(null);
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
     
     // Due date update state
     const [showDueDateModal, setShowDueDateModal] = useState(false);
@@ -382,6 +384,105 @@ export default function DebtorsPage() {
         return diffDays;
     };
 
+    const printPaymentReceipt = (paymentData: any) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+        
+        const receiptHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Payment Receipt</title>
+                <style>
+                    @page { size: 80mm 200mm; margin: 5mm; }
+                    body { font-family: Arial, sans-serif; padding: 10px; font-size: 12px; }
+                    .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                    .header h1 { margin: 0; font-size: 18px; }
+                    .header p { margin: 2px 0; font-size: 11px; }
+                    .section { margin: 10px 0; }
+                    .row { display: flex; justify-content: space-between; margin: 5px 0; }
+                    .label { font-weight: bold; }
+                    .amount { font-size: 16px; font-weight: bold; text-align: center; margin: 15px 0; padding: 10px; border: 2px solid #000; }
+                    .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px dashed #000; font-size: 10px; }
+                    @media print {
+                        body { margin: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>IBRAHIMI STORE</h1>
+                    <p>PAYMENT RECEIPT</p>
+                    <p>Date: ${new Date().toLocaleString()}</p>
+                </div>
+                
+                <div class="section">
+                    <div class="row">
+                        <span class="label">Customer:</span>
+                        <span>${paymentData.customerName}</span>
+                    </div>
+                    ${paymentData.customerId ? `
+                    <div class="row">
+                        <span class="label">Customer ID:</span>
+                        <span>${paymentData.customerId}</span>
+                    </div>
+                    ` : ''}
+                    <div class="row">
+                        <span class="label">Invoice:</span>
+                        <span>${paymentData.invoiceNumber}</span>
+                    </div>
+                </div>
+                
+                <div class="amount">
+                    PAID: ؋${paymentData.paidAmount.toLocaleString()}
+                </div>
+                
+                <div class="section">
+                    <div class="row">
+                        <span class="label">Payment Method:</span>
+                        <span>${paymentData.paymentMethod}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Original Debt:</span>
+                        <span>؋${paymentData.originalAmount.toLocaleString()}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Total Paid:</span>
+                        <span>؋${paymentData.totalPaid.toLocaleString()}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Remaining:</span>
+                        <span>؋${paymentData.remaining.toLocaleString()}</span>
+                    </div>
+                    ${paymentData.notes ? `
+                    <div class="row">
+                        <span class="label">Notes:</span>
+                        <span>${paymentData.notes}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="footer">
+                    <p>Thank you for your payment!</p>
+                    <p>This is a computer generated receipt</p>
+                </div>
+                
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            window.print();
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `;
+        
+        printWindow.document.write(receiptHTML);
+        printWindow.document.close();
+    };
+
     const handlePayment = async () => {
         if (!selectedCustomer || !paymentAmount) {
             setPaymentError('Please select a customer and enter payment amount');
@@ -415,6 +516,21 @@ export default function DebtorsPage() {
                     paymentMethod,
                     notes: paymentNotes
                 });
+                
+                // Store payment data for receipt
+                const paymentData = {
+                    customerName: selectedCustomer.name,
+                    customerId: selectedCustomer.displayId,
+                    invoiceNumber: selectedDebt.invoice.invoiceNumber,
+                    paidAmount: amountAFN,
+                    paymentMethod: paymentMethod,
+                    originalAmount: selectedDebt.originalAmountAFN,
+                    totalPaid: Number(selectedDebt.paidAmountAFN) + amountAFN,
+                    remaining: Number(selectedDebt.remainingBalanceAFN) - amountAFN,
+                    notes: paymentNotes
+                };
+                setLastPayment(paymentData);
+                setShowReceiptModal(true);
             } else {
                 // General payment/deposit without debt
                 setPaymentError('Customer has no outstanding debts to pay');
@@ -2059,6 +2175,70 @@ export default function DebtorsPage() {
                                 className="flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition-colors disabled:opacity-50"
                             >
                                 {invoiceDeleteLoading ? 'Deleting...' : '🗑️ Delete Invoice'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Payment Receipt Modal */}
+            {showReceiptModal && lastPayment && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+                        <div className="text-center">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-4xl">✓</span>
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                                Payment Received!
+                            </h3>
+                            <p className="text-gray-600">
+                                ؋{lastPayment.paidAmount.toLocaleString()} has been recorded
+                            </p>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Customer:</span>
+                                <span className="font-medium">{lastPayment.customerName}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Invoice:</span>
+                                <span className="font-mono text-xs">{lastPayment.invoiceNumber}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Payment Method:</span>
+                                <span className="font-medium">{lastPayment.paymentMethod}</span>
+                            </div>
+                            <div className="border-t pt-2 mt-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">Remaining Balance:</span>
+                                    <span className="font-bold text-orange-600">
+                                        ؋{lastPayment.remaining.toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowReceiptModal(false);
+                                    setLastPayment(null);
+                                }}
+                                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={() => {
+                                    printPaymentReceipt(lastPayment);
+                                    setShowReceiptModal(false);
+                                    setLastPayment(null);
+                                }}
+                                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                🖨️ Print Receipt
                             </button>
                         </div>
                     </div>
