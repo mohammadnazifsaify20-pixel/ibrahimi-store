@@ -78,6 +78,12 @@ export default function DebtorsPage() {
     const [dueDateLoading, setDueDateLoading] = useState(false);
     const [dueDateError, setDueDateError] = useState('');
     
+    // Delete debt state
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletePassword, setDeletePassword] = useState('');
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
+    
     // Lending form
     const [customers, setCustomers] = useState<any[]>([]);
     const [customerSearch, setCustomerSearch] = useState('');
@@ -444,6 +450,38 @@ export default function DebtorsPage() {
         }
     };
     
+    const handleDeleteDebt = async () => {
+        if (!selectedDebt) {
+            setDeleteError('No debt selected');
+            return;
+        }
+        
+        if (!deletePassword) {
+            setDeleteError('Admin password is required');
+            return;
+        }
+        
+        setDeleteLoading(true);
+        setDeleteError('');
+        
+        try {
+            await api.delete(`/debts/${selectedDebt.id}`, {
+                data: { adminPassword: deletePassword }
+            });
+            
+            setShowDeleteModal(false);
+            setDeletePassword('');
+            setSelectedDebt(null);
+            await fetchData();
+            await fetchShopBalance(); // Refresh balance as it will be restored
+            alert('Lending entry deleted successfully! Shop balance has been restored.');
+        } catch (error: any) {
+            setDeleteError(error.response?.data?.message || 'Failed to delete - Check your admin password');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+    
     const handleLending = async () => {
         if (!selectedCustomer || !lendAmount || !lendDueDate) {
             setLendError('Please fill in all required fields');
@@ -765,6 +803,16 @@ export default function DebtorsPage() {
                                                                 title="Print Debt Agreement"
                                                             >
                                                                 📄 Agreement
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedDebt(debt);
+                                                                    setShowDeleteModal(true);
+                                                                }}
+                                                                className="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                                                                title="Delete Lending Entry"
+                                                            >
+                                                                🗑️ Delete
                                                             </button>
                                                         </>
                                                     )}
@@ -1163,6 +1211,84 @@ export default function DebtorsPage() {
                                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                             >
                                 {dueDateLoading ? 'Updating...' : 'Update Date'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Debt Modal */}
+            {showDeleteModal && selectedDebt && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b pb-4">
+                            <h3 className="text-xl font-bold text-red-900">\u26a0\ufe0f Delete Lending Entry</h3>
+                            <button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setSelectedDebt(null);
+                                    setDeletePassword('');
+                                    setDeleteError('');
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                \u2715
+                            </button>
+                        </div>
+
+                        {deleteError && (
+                            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                                {deleteError}
+                            </div>
+                        )}
+
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p className="text-sm text-yellow-800 font-medium mb-2">\u26a0\ufe0f Warning: This action cannot be undone!</p>
+                            <div className="space-y-1 text-sm text-yellow-700">
+                                <p>\u2022 Customer: <strong>{selectedDebt.customer.name}</strong></p>
+                                <p>\u2022 Amount: <strong>\u060b{Math.floor(Number(selectedDebt.remainingBalanceAFN) || 0).toLocaleString()}</strong></p>
+                                <p>\u2022 Shop balance will be restored (+\u060b{Math.floor(Number(selectedDebt.originalAmountAFN) || 0).toLocaleString()})</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Admin Password <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="password"
+                                value={deletePassword}
+                                onChange={(e) => setDeletePassword(e.target.value)}
+                                className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                                placeholder="Enter admin password"
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && deletePassword) {
+                                        handleDeleteDebt();
+                                    }
+                                }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Default: ibrahimi2024</p>
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setSelectedDebt(null);
+                                    setDeletePassword('');
+                                    setDeleteError('');
+                                }}
+                                disabled={deleteLoading}
+                                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteDebt}
+                                disabled={deleteLoading || !deletePassword}
+                                className="flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition-colors disabled:opacity-50"
+                            >
+                                {deleteLoading ? 'Deleting...' : '\ud83d\uddd1\ufe0f Delete Entry'}
                             </button>
                         </div>
                     </div>

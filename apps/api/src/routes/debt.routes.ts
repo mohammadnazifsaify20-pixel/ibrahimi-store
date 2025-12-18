@@ -576,4 +576,114 @@ router.post('/debts/lend', authenticate, async (req: AuthRequest, res: Response)
     }
 });
 
+// DELETE Debt/Lending Entry (Admin Password Required)
+router.delete('/debts/:id', authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { adminPassword } = req.body;
+        
+        if (!adminPassword) {
+            return res.status(400).json({ message: 'Admin password is required' });
+        }
+        
+        // Validate admin password
+        const passwordSetting = await prisma.systemSetting.findUnique({
+            where: { key: 'admin_balance_password' }
+        });
+        const correctPassword = passwordSetting ? passwordSetting.value : 'ibrahimi2024';
+        
+        if (adminPassword !== correctPassword) {
+            return res.status(403).json({ message: 'Invalid admin password' });
+        }
+        
+        // Delete the debt entry
+        const result = await prisma.$transaction(async (tx) => {
+            const creditEntry = await tx.creditEntry.findUnique({
+                where: { id: Number(id) },
+                include: { customer: true, invoice: true }
+            });
+            
+            if (!creditEntry) {
+                throw new Error('Debt entry not found');
+            }
+            
+            // Restore customer balance
+            await tx.customer.update({
+                where: { id: creditEntry.customerId },
+                data: {
+                    outstandingBalance: { decrement: creditEntry.remainingBalance },
+                    outstandingBalanceAFN: { decrement: creditEntry.remainingBalanceAFN }
+                }
+            });
+            
+            // Restore shop balance (add back the lent amount)
+            const balanceSetting = await tx.systemSetting.findUnique({
+                where: { key: 'shop_balance' }
+            });
+            const currentBalance = balanceSetting ? parseFloat(balanceSetting.value) : 0;
+            const newBalance = currentBalance + Number(creditEntry.originalAmountAFN);
+            
+            await tx.systemSetting.upsert({
+                where: { key: 'shop_balance' },
+                update: { value: String(newBalance) },
+                create: {
+                    key: 'shop_balance',
+                    value: String(newBalance),
+                    description: 'Shop Cash Balance (AFN)'
+                }
+            });
+            
+            // Log balance restoration
+            await tx.systemSetting.create({
+                data: {
+                    key: `balance_log_${Date.now()}`,
+                    value: JSON.stringify({
+                        type: 'LENDING_DELETE',
+                        amount: Number(creditEntry.originalAmountAFN),
+                        description: `Lending deleted - Balance restored for ${creditEntry.customer.name}`,
+                        referenceId: String(creditEntry.id),
+                        timestamp: new Date().toISOString()
+                    }),
+                    description: 'Balance Transaction: LENDING_DELETE'
+                }
+            });
+            
+            // Delete the credit entry
+            await tx.creditEntry.delete({
+                where: { id: Number(id) }
+            });
+            
+            // Delete the associated invoice if it's a lending invoice
+            if (creditEntry.invoiceId && creditEntry.invoice?.invoiceNumber?.startsWith('LEND-')) {
+                await tx.invoice.delete({
+                    where: { id: creditEntry.invoiceId }
+                });
+            }
+            
+            return { creditEntry, restoredBalance: newBalance };
+        });
+        
+        // Log the action
+        await logAction(
+            req.user!.id,
+            'DELETE_LENDING',
+            'CreditEntry',
+            id,
+            { 
+                customerId: result.creditEntry.customerId,
+                amount: Number(result.creditEntry.originalAmountAFN),
+                restoredBalance: result.restoredBalance
+            }
+        );
+        
+        res.json({ 
+            message: 'Lending entry deleted and shop balance restored',
+            restoredBalance: result.restoredBalance
+        });
+    } catch (error: any) {
+        console.error('Error deleting lending entry:', error);
+        res.status(500).json({ message: error.message || 'Failed to delete lending entry' });
+    }
+});
+
 export default router;
