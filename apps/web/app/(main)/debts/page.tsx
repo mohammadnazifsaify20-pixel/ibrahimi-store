@@ -69,6 +69,12 @@ export default function DebtorsPage() {
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [paymentError, setPaymentError] = useState('');
     
+    // Due date update state
+    const [showDueDateModal, setShowDueDateModal] = useState(false);
+    const [newDueDate, setNewDueDate] = useState('');
+    const [dueDateLoading, setDueDateLoading] = useState(false);
+    const [dueDateError, setDueDateError] = useState('');
+    
     // Lending form
     const [customers, setCustomers] = useState<any[]>([]);
     const [customerSearch, setCustomerSearch] = useState('');
@@ -191,6 +197,35 @@ export default function DebtorsPage() {
             setPaymentError(error.response?.data?.message || 'Failed to record payment');
         } finally {
             setPaymentLoading(false);
+        }
+    };
+    
+    const handleUpdateDueDate = async () => {
+        if (!selectedDebt || !newDueDate) {
+            setDueDateError('Please select a new due date');
+            return;
+        }
+
+        setDueDateLoading(true);
+        setDueDateError('');
+
+        try {
+            await api.patch(`/debts/${selectedDebt.id}`, {
+                dueDate: new Date(newDueDate).toISOString()
+            });
+
+            // Refresh data
+            await fetchData();
+            
+            // Close modal and reset
+            setShowDueDateModal(false);
+            setSelectedDebt(null);
+            setNewDueDate('');
+            setDueDateError('');
+        } catch (error: any) {
+            setDueDateError(error.response?.data?.message || 'Failed to update due date');
+        } finally {
+            setDueDateLoading(false);
         }
     };
     
@@ -415,16 +450,16 @@ export default function DebtorsPage() {
                                                 </p>
                                             </td>
                                             <td className="p-4 text-right">
-                                                <p className="font-medium text-gray-900">؋{debt.originalAmountAFN.toLocaleString()}</p>
-                                                <p className="text-xs text-gray-500">${debt.originalAmount.toFixed(2)}</p>
+                                                <p className="font-medium text-gray-900">؋{(Number(debt.originalAmountAFN) || 0).toLocaleString()}</p>
+                                                <p className="text-xs text-gray-500">${(Number(debt.originalAmount) || 0).toFixed(2)}</p>
                                             </td>
                                             <td className="p-4 text-right">
-                                                <p className="font-medium text-green-600">؋{debt.paidAmountAFN.toLocaleString()}</p>
-                                                <p className="text-xs text-gray-500">${debt.paidAmount.toFixed(2)}</p>
+                                                <p className="font-medium text-green-600">؋{(Number(debt.paidAmountAFN) || 0).toLocaleString()}</p>
+                                                <p className="text-xs text-gray-500">${(Number(debt.paidAmount) || 0).toFixed(2)}</p>
                                             </td>
                                             <td className="p-4 text-right">
-                                                <p className="font-bold text-gray-900">؋{debt.remainingBalanceAFN.toLocaleString()}</p>
-                                                <p className="text-xs text-gray-500">${debt.remainingBalance.toFixed(2)}</p>
+                                                <p className="font-bold text-gray-900">؋{(Number(debt.remainingBalanceAFN) || 0).toLocaleString()}</p>
+                                                <p className="text-xs text-gray-500">${(Number(debt.remainingBalance) || 0).toFixed(2)}</p>
                                             </td>
                                             <td className="p-4">
                                                 <p className="text-sm text-gray-900">
@@ -451,18 +486,32 @@ export default function DebtorsPage() {
                                                 </span>
                                             </td>
                                             <td className="p-4">
-                                                {debt.status !== 'SETTLED' && (
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedDebt(debt);
-                                                            setShowPaymentModal(true);
-                                                            setPaymentAmount(debt.remainingBalance.toFixed(2));
-                                                        }}
-                                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                                                    >
-                                                        Record Payment
-                                                    </button>
-                                                )}
+                                                <div className="flex gap-2">
+                                                    {debt.status !== 'SETTLED' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedDebt(debt);
+                                                                    setShowPaymentModal(true);
+                                                                    setPaymentAmount((Number(debt.remainingBalance) || 0).toFixed(2));
+                                                                }}
+                                                                className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                                            >
+                                                                Pay
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedDebt(debt);
+                                                                    setNewDueDate(new Date(debt.dueDate).toISOString().split('T')[0]);
+                                                                    setShowDueDateModal(true);
+                                                                }}
+                                                                className="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+                                                            >
+                                                                Update Date
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -713,6 +762,76 @@ export default function DebtorsPage() {
                                     {lendLoading ? 'Processing...' : 'Create Lending'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Update Due Date Modal */}
+            {showDueDateModal && selectedDebt && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b pb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Update Due Date</h3>
+                            <button
+                                onClick={() => {
+                                    setShowDueDateModal(false);
+                                    setSelectedDebt(null);
+                                    setNewDueDate('');
+                                    setDueDateError('');
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {dueDateError && (
+                            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                                {dueDateError}
+                            </div>
+                        )}
+
+                        <div>
+                            <p className="text-sm text-gray-600 mb-2">Customer: <span className="font-medium text-gray-900">{selectedDebt.customer.name}</span></p>
+                            <p className="text-sm text-gray-600 mb-4">Balance: <span className="font-bold text-red-600">؋{(Number(selectedDebt.remainingBalanceAFN) || 0).toLocaleString()}</span></p>
+                            
+                            <p className="text-sm text-gray-600 mb-2">Current Due Date: <span className="font-medium text-gray-900">{new Date(selectedDebt.dueDate).toLocaleDateString()}</span></p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                New Due Date <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="date"
+                                value={newDueDate}
+                                onChange={(e) => setNewDueDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={() => {
+                                    setShowDueDateModal(false);
+                                    setSelectedDebt(null);
+                                    setNewDueDate('');
+                                    setDueDateError('');
+                                }}
+                                disabled={dueDateLoading}
+                                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUpdateDueDate}
+                                disabled={dueDateLoading || !newDueDate}
+                                className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            >
+                                {dueDateLoading ? 'Updating...' : 'Update Date'}
+                            </button>
                         </div>
                     </div>
                 </div>
