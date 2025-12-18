@@ -302,17 +302,18 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
                 throw new Error('This debt is already settled');
             }
             
-            // Allow paying up to remaining balance (using >= instead of > to allow exact payoff)
-            if (amount > Number(debt.remainingBalance)) {
+            // Use AFN amounts for validation to avoid rounding issues
+            const remainingBalanceAFN = Number(debt.remainingBalanceAFN) || (Number(debt.remainingBalance) * Number(debt.invoice.exchangeRate));
+            const paymentAmountAFN = amountAFN || (amount * Number(debt.invoice.exchangeRate));
+            
+            // Allow paying up to remaining balance with 10 AFN tolerance for rounding
+            if (paymentAmountAFN > remainingBalanceAFN + 10) {
                 throw new Error('Payment amount exceeds remaining balance');
             }
             
-            // If paying full amount, ensure we don't leave tiny rounding errors
-            const remainingBalance = Number(debt.remainingBalance);
-            const actualPayment = (Math.abs(amount - remainingBalance) < 0.01) ? remainingBalance : amount;
-            
-            // Calculate AFN amount if not provided
-            const finalAmountAFN = amountAFN || (actualPayment * Number(debt.invoice.exchangeRate));
+            // If paying close to full amount, use exact remaining balance
+            const finalAmountAFN = Math.abs(paymentAmountAFN - remainingBalanceAFN) <= 10 ? remainingBalanceAFN : paymentAmountAFN;
+            const actualPayment = finalAmountAFN / Number(debt.invoice.exchangeRate);
             
             // Record the payment
             const payment = await tx.debtPayment.create({

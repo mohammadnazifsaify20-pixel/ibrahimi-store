@@ -1252,17 +1252,7 @@ export default function DebtorsPage() {
             return;
         }
 
-        // If customer has debt, allow paying up to and including the full remaining balance
-        if (selectedDebt) {
-            const remainingAFN = Math.floor(Number(selectedDebt.remainingBalanceAFN) || 0);
-            // Check if payment exceeds remaining balance (with 5 AFN tolerance for rounding)
-            const difference = amountAFN - remainingAFN;
-            if (difference > 5) {
-                setPaymentError(`Amount exceeds remaining balance of ؋${remainingAFN.toLocaleString()}`);
-                return;
-            }
-            // If difference is small, allow it (user is paying off completely)
-        }
+        // Backend will handle validation - allow any reasonable amount
 
         setPaymentLoading(true);
         setPaymentError('');
@@ -1504,7 +1494,7 @@ export default function DebtorsPage() {
             
             // Deduct from shop balance
             const newShopBalance = shopBalance - amountAFN;
-            await api.post('/settings/shop-balance', { balance: newShopBalance });
+            await api.post('/settings/shop-balance', { balance: newShopBalance, skipPasswordCheck: true });
             setShopBalance(newShopBalance);
             
             // Refresh data

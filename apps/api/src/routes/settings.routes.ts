@@ -186,14 +186,15 @@ async function logBalanceTransaction(type: string, amount: number, description: 
 // Update Shop Balance with transaction logging
 router.post('/shop-balance', async (req: Request, res: Response) => {
     try {
-        const { balance, password, description } = req.body;
+        const { balance, password, description, skipPasswordCheck } = req.body;
 
         if (balance === undefined || isNaN(balance) || balance < 0) {
             return res.status(400).json({ message: 'Invalid balance amount' });
         }
 
-        // Validate admin password if provided
-        if (password) {
+        // Skip password validation for system operations (lending, payments, etc)
+        // Only validate password for manual balance updates from the UI
+        if (!skipPasswordCheck && password !== undefined) {
             const passwordSetting = await prisma.systemSetting.findUnique({
                 where: { key: 'admin_balance_password' }
             });
