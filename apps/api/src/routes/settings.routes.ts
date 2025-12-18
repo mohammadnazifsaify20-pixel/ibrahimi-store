@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient, Role } from '@repo/database';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.middleware';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -184,7 +185,7 @@ async function logBalanceTransaction(type: string, amount: number, description: 
 }
 
 // Update Shop Balance with transaction logging
-router.post('/shop-balance', async (req: Request, res: Response) => {
+router.post('/shop-balance', authenticate, async (req: AuthRequest, res: Response) => {
     try {
         const { balance, password, description, skipPasswordCheck } = req.body;
 
@@ -195,13 +196,22 @@ router.post('/shop-balance', async (req: Request, res: Response) => {
         // Skip password validation for system operations (lending, payments, etc)
         // Only validate password for manual balance updates from the UI
         if (!skipPasswordCheck && password !== undefined) {
-            const passwordSetting = await prisma.systemSetting.findUnique({
-                where: { key: 'admin_balance_password' }
+            // Verify against logged-in user's password
+            if (!req.user?.id) {
+                return res.status(401).json({ message: 'User not authenticated' });
+            }
+
+            const user = await prisma.user.findUnique({
+                where: { id: req.user.id }
             });
-            const adminPassword = passwordSetting ? passwordSetting.value : 'ibrahimi2024';
-            
-            if (password !== adminPassword) {
-                return res.status(401).json({ message: 'Invalid admin password' });
+
+            if (!user) {
+                return res.status(401).json({ message: 'User not found' });
+            }
+
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            if (!isPasswordValid) {
+                return res.status(401).json({ message: 'Invalid password' });
             }
         }
 
