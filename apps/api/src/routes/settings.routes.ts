@@ -80,4 +80,45 @@ router.post('/fetch-live-rate', authenticate, authorize([Role.ADMIN, Role.MANAGE
     }
 });
 
+// Get Shop Balance
+router.get('/shop-balance', async (req: Request, res: Response) => {
+    try {
+        const setting = await prisma.systemSetting.findUnique({
+            where: { key: 'shop_balance' }
+        });
+
+        const balance = setting ? parseFloat(setting.value) : 0;
+        res.json({ balance });
+    } catch (error) {
+        console.error('Failed to fetch shop balance:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Update Shop Balance
+router.post('/shop-balance', async (req: Request, res: Response) => {
+    try {
+        const { balance } = req.body;
+
+        if (balance === undefined || isNaN(balance) || balance < 0) {
+            return res.status(400).json({ message: 'Invalid balance amount' });
+        }
+
+        const setting = await prisma.systemSetting.upsert({
+            where: { key: 'shop_balance' },
+            update: { value: String(balance) },
+            create: {
+                key: 'shop_balance',
+                value: String(balance),
+                description: 'Shop Cash Balance (AFN)'
+            }
+        });
+
+        res.json({ message: 'Shop balance updated', balance: parseFloat(setting.value) });
+    } catch (error) {
+        console.error('Failed to update shop balance:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 export default router;

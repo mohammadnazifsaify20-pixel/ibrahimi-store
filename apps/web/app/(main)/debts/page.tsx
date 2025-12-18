@@ -88,6 +88,60 @@ export default function DebtorsPage() {
     const [lendLoading, setLendLoading] = useState(false);
     const [lendError, setLendError] = useState('');
     
+    // Shop balance management
+    const [shopBalance, setShopBalance] = useState<number>(0);
+    const [showBalanceModal, setShowBalanceModal] = useState(false);
+    const [adminPassword, setAdminPassword] = useState('');
+    const [newBalance, setNewBalance] = useState('');
+    const [balanceError, setBalanceError] = useState('');
+    const [balanceLoading, setBalanceLoading] = useState(false);
+    
+    const ADMIN_PASSWORD = 'ibrahimi2024'; // Store this securely in production
+    
+    const fetchShopBalance = async () => {
+        try {
+            const response = await api.get('/settings/shop-balance');
+            setShopBalance(response.data.balance || 0);
+        } catch (error) {
+            // Balance not set yet or error, default to 0
+            setShopBalance(0);
+        }
+    };
+    
+    const handleUpdateBalance = async () => {
+        if (!adminPassword || !newBalance) {
+            setBalanceError('Please enter admin password and balance amount');
+            return;
+        }
+        
+        if (adminPassword !== ADMIN_PASSWORD) {
+            setBalanceError('Invalid admin password');
+            return;
+        }
+        
+        const balanceAmount = Number(newBalance);
+        if (balanceAmount < 0) {
+            setBalanceError('Balance cannot be negative');
+            return;
+        }
+        
+        setBalanceLoading(true);
+        setBalanceError('');
+        
+        try {
+            await api.post('/settings/shop-balance', { balance: balanceAmount });
+            setShopBalance(balanceAmount);
+            setShowBalanceModal(false);
+            setAdminPassword('');
+            setNewBalance('');
+            setBalanceError('');
+        } catch (error: any) {
+            setBalanceError(error.response?.data?.message || 'Failed to update balance');
+        } finally {
+            setBalanceLoading(false);
+        }
+    };
+    
     const fetchCustomers = async () => {
         try {
             const res = await api.get('/customers');
@@ -264,6 +318,7 @@ export default function DebtorsPage() {
     
     useEffect(() => {
         fetchCustomers();
+        fetchShopBalance();
         fetchExchangeRate().catch(err => {
             console.error('Failed to fetch exchange rate, using default:', err);
         });
@@ -407,6 +462,12 @@ export default function DebtorsPage() {
             return;
         }
         
+        // Check if shop has enough balance
+        if (amountAFN > shopBalance) {
+            setLendError(`Insufficient shop balance. Available: ؋${shopBalance.toLocaleString()}`);
+            return;
+        }
+        
         setLendLoading(true);
         setLendError('');
         
@@ -422,6 +483,11 @@ export default function DebtorsPage() {
                 notes: lendNotes || 'Cash Lending',
                 exchangeRate: currentExchangeRate
             });
+            
+            // Deduct from shop balance
+            const newShopBalance = shopBalance - amountAFN;
+            await api.post('/settings/shop-balance', { balance: newShopBalance });
+            setShopBalance(newShopBalance);
             
             // Refresh data
             await fetchData();
@@ -477,7 +543,14 @@ export default function DebtorsPage() {
                     <h1 className="text-3xl font-bold text-gray-900">Debt Management</h1>
                     <p className="text-gray-600 mt-1">Track and manage customer credit accounts</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-center">
+                    <div 
+                        onClick={() => setShowBalanceModal(true)}
+                        className="bg-purple-100 border-2 border-purple-300 rounded-xl px-4 py-2 cursor-pointer hover:bg-purple-200 transition-colors"
+                    >
+                        <p className="text-xs text-purple-700 font-medium">Shop Balance</p>
+                        <p className="text-xl font-bold text-purple-900">؋{shopBalance.toLocaleString()}</p>
+                    </div>
                     <button
                         onClick={() => {
                             setShowPaymentModal(true);
@@ -1191,6 +1264,99 @@ export default function DebtorsPage() {
                                 className="flex-1 bg-yellow-600 text-white py-3 rounded-lg font-bold hover:bg-yellow-700 transition-colors"
                             >
                                 نمایش همه / View All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Shop Balance Admin Modal */}
+            {showBalanceModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b pb-4">
+                            <h3 className="text-xl font-bold text-gray-900">🔒 Update Shop Balance</h3>
+                            <button
+                                onClick={() => {
+                                    setShowBalanceModal(false);
+                                    setAdminPassword('');
+                                    setNewBalance('');
+                                    setBalanceError('');
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {balanceError && (
+                            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                                {balanceError}
+                            </div>
+                        )}
+
+                        <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                            <p className="text-sm text-purple-700 font-medium">Current Balance</p>
+                            <p className="text-3xl font-bold text-purple-900">؋{shopBalance.toLocaleString()}</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Admin Password <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="password"
+                                value={adminPassword}
+                                onChange={(e) => setAdminPassword(e.target.value)}
+                                className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                placeholder="Enter admin password"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                New Balance (AFN) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-3 text-gray-500 font-bold text-lg">؋</span>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    value={newBalance}
+                                    onChange={(e) => setNewBalance(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-lg font-bold"
+                                    placeholder="Enter new balance"
+                                />
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">
+                                USD: ${(Number(newBalance) / (exchangeRate || 70)).toFixed(2)}
+                            </p>
+                        </div>
+
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p className="text-xs text-yellow-800">
+                                ⚠️ <strong>Important:</strong> This balance will be deducted automatically when you lend money to customers.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={() => {
+                                    setShowBalanceModal(false);
+                                    setAdminPassword('');
+                                    setNewBalance('');
+                                    setBalanceError('');
+                                }}
+                                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUpdateBalance}
+                                disabled={balanceLoading || !adminPassword || !newBalance}
+                                className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors disabled:opacity-50"
+                            >
+                                {balanceLoading ? 'Updating...' : '✓ Update Balance'}
                             </button>
                         </div>
                     </div>
