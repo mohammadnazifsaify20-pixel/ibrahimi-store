@@ -309,11 +309,20 @@ export default function DebtorsPage() {
     };
 
     const handlePayment = async () => {
-        if (!selectedDebt || !paymentAmount) return;
+        if (!selectedCustomer || !paymentAmount) {
+            setPaymentError('Please select a customer and enter payment amount');
+            return;
+        }
         
         const amountAFN = Number(paymentAmount);
-        if (amountAFN <= 0 || amountAFN > selectedDebt.remainingBalanceAFN) {
+        if (amountAFN <= 0) {
             setPaymentError('Invalid payment amount');
+            return;
+        }
+
+        // If customer has debt, check amount doesn't exceed balance
+        if (selectedDebt && amountAFN > selectedDebt.remainingBalanceAFN) {
+            setPaymentError(`Amount exceeds remaining balance of ؋${selectedDebt.remainingBalanceAFN.toLocaleString()}`);
             return;
         }
 
@@ -324,12 +333,20 @@ export default function DebtorsPage() {
             // Calculate USD amount from AFN
             const amount = amountAFN / (exchangeRate || 70);
             
-            await api.post(`/debts/${selectedDebt.id}/payments`, {
-                amount,
-                amountAFN,
-                paymentMethod,
-                notes: paymentNotes
-            });
+            if (selectedDebt) {
+                // Payment for existing debt
+                await api.post(`/debts/${selectedDebt.id}/payments`, {
+                    amount,
+                    amountAFN,
+                    paymentMethod,
+                    notes: paymentNotes
+                });
+            } else {
+                // General payment/deposit without debt
+                setPaymentError('Customer has no outstanding debts to pay');
+                setPaymentLoading(false);
+                return;
+            }
 
             // Refresh data
             await fetchData();
@@ -337,6 +354,8 @@ export default function DebtorsPage() {
             // Close modal and reset
             setShowPaymentModal(false);
             setSelectedDebt(null);
+            setSelectedCustomer(null);
+            setCustomerSearch('');
             setPaymentAmount('');
             setPaymentNotes('');
             setPaymentError('');
@@ -780,21 +799,6 @@ export default function DebtorsPage() {
                                     </>
                                 )}
                             </div>
-
-                            {/* Show debt info if customer has unpaid debts */}
-                            {selectedCustomer && debts?.filter(d => d.customer.id === selectedCustomer.id && d.status !== 'SETTLED').length > 0 && (
-                                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-3">
-                                    <p className="text-sm font-medium text-yellow-900 mb-2">Outstanding Debts:</p>
-                                    <div className="space-y-1">
-                                        {debts?.filter(d => d.customer.id === selectedCustomer.id && d.status !== 'SETTLED').map(debt => (
-                                            <div key={debt.id} className="flex justify-between items-center text-xs">
-                                                <span className="font-mono text-gray-700">{debt.invoice.invoiceNumber}</span>
-                                                <span className="font-bold text-red-600">؋{(Number(debt.remainingBalanceAFN) || 0).toLocaleString()}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Amount Input */}
                             <div>
