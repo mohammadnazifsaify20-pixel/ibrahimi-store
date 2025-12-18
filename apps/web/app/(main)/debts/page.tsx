@@ -1258,13 +1258,10 @@ export default function DebtorsPage() {
         setPaymentError('');
 
         try {
-            // Calculate USD amount from AFN
-            const amount = amountAFN / (exchangeRate || 70);
-            
+            // Work purely in AFN - no USD conversion needed
             if (selectedDebt) {
                 // Payment for existing debt
                 await api.post(`/debts/${selectedDebt.id}/payments`, {
-                    amount,
                     amountAFN,
                     paymentMethod,
                     notes: paymentNotes

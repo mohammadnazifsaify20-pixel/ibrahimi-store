@@ -302,9 +302,9 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
                 throw new Error('This debt is already settled');
             }
             
-            // Use AFN amounts for validation to avoid rounding issues
-            const remainingBalanceAFN = Number(debt.remainingBalanceAFN) || (Number(debt.remainingBalance) * Number(debt.invoice.exchangeRate));
-            const paymentAmountAFN = amountAFN || (amount * Number(debt.invoice.exchangeRate));
+            // Use AFN amounts directly - no USD conversion needed
+            const remainingBalanceAFN = Number(debt.remainingBalanceAFN) || 0;
+            const paymentAmountAFN = amountAFN || 0;
             
             // Allow paying up to remaining balance with 10 AFN tolerance for rounding
             if (paymentAmountAFN > remainingBalanceAFN + 10) {
@@ -313,6 +313,7 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
             
             // If paying close to full amount, use exact remaining balance
             const finalAmountAFN = Math.abs(paymentAmountAFN - remainingBalanceAFN) <= 10 ? remainingBalanceAFN : paymentAmountAFN;
+            // Calculate USD equivalent for backward compatibility
             const actualPayment = finalAmountAFN / Number(debt.invoice.exchangeRate);
             
             // Record the payment
@@ -351,7 +352,7 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
             await tx.customer.update({
                 where: { id: debt.customerId },
                 data: {
-                    outstandingBalance: { decrement: amount },
+                    outstandingBalance: { decrement: actualPayment },
                     outstandingBalanceAFN: { decrement: finalAmountAFN }
                 }
             });
