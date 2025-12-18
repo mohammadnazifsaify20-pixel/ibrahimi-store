@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { PrismaClient, DepositStatus } from '@repo/database';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
+import bcrypt from 'bcrypt';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -11,11 +12,13 @@ const createDepositSchema = z.object({
     customerId: z.number(),
     amountAFN: z.number().positive(),
     notes: z.string().optional(),
+    password: z.string().min(1),
 });
 
 const withdrawSchema = z.object({
     amountAFN: z.number().positive(),
     notes: z.string().optional(),
+    password: z.string().min(1),
 });
 
 // Generate deposit number
@@ -97,6 +100,25 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     try {
         const data = createDepositSchema.parse(req.body);
         
+        // Fetch user with password for validation
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: { id: true, password: true }
+        });
+        
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+        
+        const isPasswordValid = await bcrypt.compare(data.password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Invalid password' });
+        }
+        
         const result = await prisma.$transaction(async (tx) => {
             // Generate deposit number
             const depositNumber = await generateDepositNumber();
@@ -164,6 +186,25 @@ router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res: Respons
     try {
         const { id } = req.params;
         const data = withdrawSchema.parse(req.body);
+        
+        // Fetch user with password for validation
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: { id: true, password: true }
+        });
+        
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+        
+        const isPasswordValid = await bcrypt.compare(data.password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Invalid password' });
+        }
         
         const result = await prisma.$transaction(async (tx) => {
             // Get deposit
