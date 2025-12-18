@@ -2489,10 +2489,10 @@ export default function DebtorsPage() {
                                 value={adminPassword}
                                 onChange={(e) => setAdminPassword(e.target.value)}
                                 className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                                placeholder="Enter admin password (default: ibrahimi2024)"
+                                placeholder="Enter admin password"
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                                💡 To change password, contact system administrator
+                                💡 Enter your login password to update shop balance
                             </p>
                         </div>
 
