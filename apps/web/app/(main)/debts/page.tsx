@@ -276,7 +276,7 @@ export default function DebtorsPage() {
             case 'OVERDUE':
                 return 'bg-red-100 text-red-800 border-red-200';
             case 'SETTLED':
-                return 'bg-gray-100 text-gray-800 border-gray-200';
+                return 'bg-blue-100 text-blue-800 border-blue-200';
             default:
                 return 'bg-blue-100 text-blue-800 border-blue-200';
         }
@@ -528,7 +528,7 @@ export default function DebtorsPage() {
                     { key: 'overdue', label: 'Overdue' },
                     { key: 'due_soon', label: 'Due Soon' },
                     { key: 'active', label: 'Active' },
-                    { key: 'settled', label: 'Settled' }
+                    { key: 'settled', label: 'Paid' }
                 ].map(({ key, label }) => (
                     <button
                         key={key}
@@ -622,7 +622,7 @@ export default function DebtorsPage() {
                                             <td className="p-4">
                                                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(debt.status)}`}>
                                                     {getStatusIcon(debt.status)}
-                                                    {debt.status.replace('_', ' ')}
+                                                    {debt.status === 'SETTLED' ? 'PAID' : debt.status.replace('_', ' ')}
                                                 </span>
                                             </td>
                                             <td className="p-4">

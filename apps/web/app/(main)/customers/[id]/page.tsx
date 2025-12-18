@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import api from '../../../../lib/api';
 import AddCustomerModal from '../../../../components/AddCustomerModal';
 import ReceivePaymentModal from '../../../../components/ReceivePaymentModal';
-import { ChevronLeft, Edit, Wallet, CreditCard } from 'lucide-react';
+import { ChevronLeft, Edit, Wallet, CreditCard, ShoppingBag, DollarSign } from 'lucide-react';
 import { useSettingsStore } from '../../../../lib/settingsStore';
 
 export default function CustomerDetailsPage({ params }: { params: { id: string } }) {
     const router = useRouter();
     const [customer, setCustomer] = useState<any>(null);
     const [creditHistory, setCreditHistory] = useState<any[]>([]);
+    const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -21,6 +22,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
     useEffect(() => {
         fetchCustomer();
         fetchCreditHistory();
+        fetchTransactions();
         fetchExchangeRate();
     }, [params.id]);
 
@@ -41,6 +43,15 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
             setCreditHistory(res.data);
         } catch (error) {
             console.error('Failed to fetch credit history', error);
+        }
+    };
+    
+    const fetchTransactions = async () => {
+        try {
+            const res = await api.get(`/sales`, { params: { customerId: params.id } });
+            setTransactions(res.data);
+        } catch (error) {
+            console.error('Failed to fetch transactions', error);
         }
     };
 
@@ -66,8 +77,8 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                         </div>
                         <div style="margin-top: 16px; display: flex; justify-content: space-between; width: 100%; padding: 0 16px;">
                             <div style="text-align: left;">
-                                <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Phone</p>
-                                <p style="font-family: 'Courier New', monospace; font-weight: bold; font-size: 14px; margin: 0;">${customer.phone || 'N/A'}</p>
+                                <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Store Contact</p>
+                                <p style="font-family: 'Courier New', monospace; font-weight: bold; font-size: 14px; margin: 0;">+971 50 123 4567</p>
                             </div>
                             <div style="text-align: right;">
                                 <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Customer ID</p>
@@ -254,12 +265,12 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                credit.status === 'SETTLED' ? 'bg-green-100 text-green-700' :
+                                                credit.status === 'SETTLED' ? 'bg-blue-100 text-blue-700' :
                                                 credit.status === 'OVERDUE' ? 'bg-red-100 text-red-700' :
                                                 credit.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700' :
-                                                'bg-blue-100 text-blue-700'
+                                                'bg-green-100 text-green-700'
                                             }`}>
-                                                {credit.status.replace('_', ' ')}
+                                                {credit.status === 'SETTLED' ? 'PAID' : credit.status.replace('_', ' ')}
                                             </span>
                                         </td>
                                     </tr>
@@ -270,50 +281,106 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                 </>
             )}
 
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Transaction History</h2>
+            {/* All Transactions Section - Combined Shopping & Debts */}
+            <h2 className="text-xl font-bold text-gray-800 mb-4 mt-8 flex items-center gap-2">
+                <ShoppingBag size={24} />
+                All Transaction History
+            </h2>
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                 <table className="w-full text-left">
                     <thead className="bg-gray-50 text-gray-500 text-sm border-b">
                         <tr>
-                            <th className="px-6 py-4 font-medium">Invoice #</th>
                             <th className="px-6 py-4 font-medium">Date</th>
+                            <th className="px-6 py-4 font-medium">Type</th>
+                            <th className="px-6 py-4 font-medium">Invoice/Ref</th>
                             <th className="px-6 py-4 font-medium">Total (AFG)</th>
                             <th className="px-6 py-4 font-medium">Paid (AFG)</th>
+                            <th className="px-6 py-4 font-medium">Balance (AFG)</th>
                             <th className="px-6 py-4 font-medium">Status</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {customer.invoices?.length === 0 ? (
+                        {transactions.length === 0 && creditHistory.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="px-6 py-8 text-center text-gray-400">No transactions found</td>
+                                <td colSpan={7} className="px-6 py-8 text-center text-gray-400">No transactions found</td>
                             </tr>
                         ) : (
-                            customer.invoices?.map((inv: any) => (
-                                <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 font-bold text-blue-600 hover:text-blue-800 transition">
-                                        <a href={`/dashboard/sales/${inv.id}`} className="hover:underline">
-                                            {inv.invoiceNumber}
-                                        </a>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-600">
-                                        {new Date(inv.date).toLocaleDateString()}
-                                    </td>
-                                    <td className="px-6 py-4 font-bold text-gray-900">
-                                        ؋{inv.totalLocal ? Number(inv.totalLocal).toFixed(0) : (Number(inv.total) * 70).toFixed(0)}
-                                    </td>
-                                    <td className="px-6 py-4 text-green-600">
-                                        ؋{(Number(inv.paidAmount) * 70).toFixed(0)}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
-                                            inv.status === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
+                            <>
+                                {/* Shopping Transactions */}
+                                {transactions.map((inv: any) => (
+                                    <tr key={`sale-${inv.id}`} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {new Date(inv.date).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="flex items-center gap-1 text-blue-600 font-medium">
+                                                <ShoppingBag size={16} />
+                                                Shopping
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-blue-600 hover:text-blue-800 transition">
+                                            <a href={`/dashboard/sales/${inv.id}`} className="hover:underline">
+                                                {inv.invoiceNumber}
+                                            </a>
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-gray-900">
+                                            ؋{Math.floor(Number(inv.totalLocal || inv.total * 70)).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-green-600 font-medium">
+                                            ؋{Math.floor(Number(inv.paidAmount) * 70).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-red-600">
+                                            ؋{Math.floor(Number(inv.outstandingAmount) * 70).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                                inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                                                inv.status === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
                                                 'bg-gray-100 text-gray-700'
                                             }`}>
-                                            {inv.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))
+                                                {inv.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                                
+                                {/* Debt Transactions */}
+                                {creditHistory.map((credit: any) => (
+                                    <tr key={`debt-${credit.id}`} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {new Date(credit.createdAt).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="flex items-center gap-1 text-purple-600 font-medium">
+                                                <DollarSign size={16} />
+                                                Debt/Loan
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 font-mono">
+                                            {credit.invoice?.invoiceNumber}
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-gray-900">
+                                            ؋{Math.floor(Number(credit.originalAmountAFN)).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-green-600 font-medium">
+                                            ؋{Math.floor(Number(credit.paidAmountAFN || 0)).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-red-600">
+                                            ؋{Math.floor(Number(credit.remainingBalanceAFN || 0)).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                                credit.status === 'SETTLED' ? 'bg-blue-100 text-blue-700' :
+                                                credit.status === 'OVERDUE' ? 'bg-red-100 text-red-700' :
+                                                credit.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700' :
+                                                'bg-green-100 text-green-700'
+                                            }`}>
+                                                {credit.status === 'SETTLED' ? 'PAID' : credit.status.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </>
                         )}
                     </tbody>
                 </table>
