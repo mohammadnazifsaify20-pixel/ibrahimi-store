@@ -177,8 +177,11 @@ export default function DebtorsPage() {
             setAdminPassword('');
             setNewBalance('');
             setBalanceError('');
+            alert('Shop balance updated successfully!');
         } catch (error: any) {
-            setBalanceError(error.response?.data?.message || 'Failed to update balance');
+            const errorMessage = error.response?.data?.message || 'Failed to update balance';
+            setBalanceError(errorMessage);
+            // Don't clear password field so user can retry
         } finally {
             setBalanceLoading(false);
         }
@@ -401,7 +404,7 @@ export default function DebtorsPage() {
                     .signature-line { border-top: 2px solid #000; margin-top: 60px; padding-top: 5px; text-align: center; }
                     .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 15px; }
                     @media print {
-                        body { padding: 0; }
+                        body { padding: 0; transform: scale(0.74); transform-origin: top left; width: 135%; }
                         .no-print { display: none; }
                     }
                 </style>
@@ -482,9 +485,9 @@ export default function DebtorsPage() {
                     </div>
                 </div>
 
-                <div class="footer">
-                    <p><strong>IMPORTANT NOTICE / اطلاعیه مهم:</strong></p>
-                    <p>This is a legal agreement. The borrower must return the full amount on the exact due date.<br>
+                <div class="footer" style="background: #fff3cd; border: 2px solid #ff9800; padding: 15px; border-radius: 5px;">
+                    <p style="color: #d84315; font-weight: bold; font-size: 14px; margin: 5px 0;">⚠️ IMPORTANT NOTICE / اطلاعیه مهم ⚠️</p>
+                    <p style="color: #e65100; font-weight: bold; font-size: 13px; line-height: 1.8;">This is a legal agreement. The borrower must return the full amount on the exact due date.<br>
                     این یک قرارداد قانونی است. قرض گیرنده باید مبلغ کامل را در تاریخ سررسید دقیق برگرداند.</p>
                 </div>
 
@@ -581,59 +584,59 @@ export default function DebtorsPage() {
             <body>
                 <div class="header">
                     <h1>IBRAHIMI STORE</h1>
-                    <p>PAYMENT RECEIPT</p>
-                    <p>Date: ${new Date().toLocaleString()}</p>
+                    <p>PAYMENT RECEIPT / رسید پرداخت</p>
+                    <p>Date / تاریخ: ${new Date().toLocaleString()}</p>
                 </div>
                 
                 <div class="section">
                     <div class="row">
-                        <span class="label">Customer:</span>
+                        <span class="label">Customer / مشتری:</span>
                         <span>${paymentData.customerName}</span>
                     </div>
                     ${paymentData.customerId ? `
                     <div class="row">
-                        <span class="label">Customer ID:</span>
+                        <span class="label">Customer ID / شناسنامه:</span>
                         <span>${paymentData.customerId}</span>
                     </div>
                     ` : ''}
                     <div class="row">
-                        <span class="label">Invoice:</span>
+                        <span class="label">Invoice / فاکتور:</span>
                         <span>${paymentData.invoiceNumber}</span>
                     </div>
                 </div>
                 
                 <div class="amount">
-                    PAID: ؋${paymentData.paidAmount.toLocaleString()}
+                    PAID / پرداخت شده: ؋${paymentData.paidAmount.toLocaleString()}
                 </div>
                 
                 <div class="section">
                     <div class="row">
-                        <span class="label">Payment Method:</span>
+                        <span class="label">Payment Method / روش پرداخت:</span>
                         <span>${paymentData.paymentMethod}</span>
                     </div>
                     <div class="row">
-                        <span class="label">Original Debt:</span>
+                        <span class="label">Original Debt / قرض اصلی:</span>
                         <span>؋${paymentData.originalAmount.toLocaleString()}</span>
                     </div>
                     <div class="row">
-                        <span class="label">Total Paid:</span>
+                        <span class="label">Total Paid / مجموع پرداخت:</span>
                         <span>؋${paymentData.totalPaid.toLocaleString()}</span>
                     </div>
                     <div class="row">
-                        <span class="label">Remaining:</span>
+                        <span class="label">Remaining / باقیمانده:</span>
                         <span>؋${paymentData.remaining.toLocaleString()}</span>
                     </div>
                     ${paymentData.notes ? `
                     <div class="row">
-                        <span class="label">Notes:</span>
+                        <span class="label">Notes / یادداشت:</span>
                         <span>${paymentData.notes}</span>
                     </div>
                     ` : ''}
                 </div>
                 
                 <div class="footer">
-                    <p>Thank you for your payment!</p>
-                    <p>This is a computer generated receipt</p>
+                    <p>Thank you for your payment! / از پرداخت شما متشکریم</p>
+                    <p>This is a computer generated receipt / این رسید کمپیوتری است</p>
                 </div>
                 
                 <script>
@@ -1250,14 +1253,15 @@ export default function DebtorsPage() {
         }
 
         // If customer has debt, allow paying up to and including the full remaining balance
-        if (selectedDebt && amountAFN > Number(selectedDebt.remainingBalanceAFN)) {
-            // Check if it's just a tiny rounding difference (within 1 AFN)
-            const difference = amountAFN - Number(selectedDebt.remainingBalanceAFN);
-            if (difference > 1) {
-                setPaymentError(`Amount exceeds remaining balance of ؋${Number(selectedDebt.remainingBalanceAFN).toLocaleString()}`);
+        if (selectedDebt) {
+            const remainingAFN = Math.floor(Number(selectedDebt.remainingBalanceAFN) || 0);
+            // Check if payment exceeds remaining balance (with 5 AFN tolerance for rounding)
+            const difference = amountAFN - remainingAFN;
+            if (difference > 5) {
+                setPaymentError(`Amount exceeds remaining balance of ؋${remainingAFN.toLocaleString()}`);
                 return;
             }
-            // If difference is tiny, allow it and adjust to exact amount
+            // If difference is small, allow it (user is paying off completely)
         }
 
         setPaymentLoading(true);
