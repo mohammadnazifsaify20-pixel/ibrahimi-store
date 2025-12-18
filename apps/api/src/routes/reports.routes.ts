@@ -23,7 +23,10 @@ router.get('/dashboard', authenticate, authorize([Role.ADMIN, Role.MANAGER]), as
                 select: { id: true, name: true, sku: true, quantityOnHand: true }
             }),
             prisma.customer.aggregate({
-                _sum: { outstandingBalance: true },
+                _sum: { 
+                    outstandingBalance: true,
+                    outstandingBalanceAFN: true 
+                },
             })
         ]);
 
@@ -43,12 +46,17 @@ router.get('/dashboard', authenticate, authorize([Role.ADMIN, Role.MANAGER]), as
             salesTodayAFN += invTotalAFN;
         });
 
+        // Use AFN field if available, otherwise calculate from USD (for backward compatibility)
+        const totalOutstandingAFN = outcomes._sum.outstandingBalanceAFN 
+            ? Math.round(Number(outcomes._sum.outstandingBalanceAFN))
+            : Math.round(Number(outcomes._sum.outstandingBalance || 0) * 70);
+
         res.json({
             salesToday: Math.round(salesTodayAFN), // Sending AFN directly, rounded to integer
             invoicesToday: todayInvoices.length,
             lowStockItems: lowStockList.length,
             lowStockList,
-            totalOutstandingCredit: outcomes._sum.outstandingBalance || 0,
+            totalOutstandingCredit: totalOutstandingAFN, // AFN amount, NOT USD
             currency: 'AFN'
         });
     } catch (error) {

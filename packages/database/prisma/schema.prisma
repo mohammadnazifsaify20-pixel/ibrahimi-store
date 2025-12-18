@@ -179,27 +179,52 @@ model Payment {
   date       DateTime      @default(now())
 }
 
+enum DebtStatus {
+  ACTIVE
+  DUE_SOON
+  OVERDUE
+  SETTLED
+}
+
 model CreditEntry {
-  id               Int      @id @default(autoincrement())
-  customerId       Int      @map("customer_id")
-  customer         Customer @relation(fields: [customerId], references: [id])
-  invoiceId        Int      @map("invoice_id")
-  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  id               Int        @id @default(autoincrement())
+  customerId       Int        @map("customer_id")
+  customer         Customer   @relation(fields: [customerId], references: [id])
+  invoiceId        Int        @map("invoice_id")
+  invoice          Invoice    @relation(fields: [invoiceId], references: [id])
   
-  originalAmount   Decimal  @map("original_amount") @db.Decimal(10, 2) // The amount that was credited (Loan) USD
-  originalAmountAFN Decimal? @default(0) @map("original_amount_afn") @db.Decimal(10, 2) // AFN
+  originalAmount   Decimal    @map("original_amount") @db.Decimal(10, 2) // The amount that was credited (Loan) USD
+  originalAmountAFN Decimal?  @default(0) @map("original_amount_afn") @db.Decimal(10, 2) // AFN
   
-  paidAmount       Decimal  @default(0) @map("paid_amount") @db.Decimal(10, 2)
-  paidAmountAFN    Decimal? @default(0) @map("paid_amount_afn") @db.Decimal(10, 2)
+  paidAmount       Decimal    @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  paidAmountAFN    Decimal?   @default(0) @map("paid_amount_afn") @db.Decimal(10, 2)
   
-  remainingBalance Decimal  @map("remaining_balance") @db.Decimal(10, 2)
+  remainingBalance Decimal    @map("remaining_balance") @db.Decimal(10, 2)
   remainingBalanceAFN Decimal? @default(0) @map("remaining_balance_afn") @db.Decimal(10, 2)
 
-  dueDate          DateTime? @map("due_date")
-  status           String    @default("ACTIVE") // ACTIVE, CLEARED, WRITE_OFF
+  dueDate          DateTime   @map("due_date") // Now MANDATORY
+  status           DebtStatus @default(ACTIVE)
+  notes            String?    // Remarks/Notes
   
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  debtPayments     DebtPayment[]
+}
+
+model DebtPayment {
+  id             Int          @id @default(autoincrement())
+  creditEntryId  Int          @map("credit_entry_id")
+  creditEntry    CreditEntry  @relation(fields: [creditEntryId], references: [id])
+  
+  amount         Decimal      @db.Decimal(10, 2) // USD
+  amountAFN      Decimal?     @db.Decimal(10, 2) // AFN
+  paymentMethod  PaymentMethod
+  reference      String?
+  notes          String?
+  
+  paymentDate    DateTime     @default(now())
+  createdAt      DateTime     @default(now())
 }
 
 model SystemSetting {

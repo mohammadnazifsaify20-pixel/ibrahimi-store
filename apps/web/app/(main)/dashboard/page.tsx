@@ -14,12 +14,19 @@ export default function DashboardPage() {
         totalOutstandingCredit: 0,
         lowStockList: [] as any[]
     });
+    
+    const [debtSummary, setDebtSummary] = useState<any>(null);
 
     useEffect(() => {
         // Mock data for initial loading or fetch from API
         api.get('/reports/dashboard')
             .then(res => setStats(res.data))
             .catch(err => console.error(err));
+            
+        // Fetch debt summary
+        api.get('/debts/summary')
+            .then(res => setDebtSummary(res.data))
+            .catch(err => console.error('Failed to fetch debt summary:', err));
     }, []);
 
     const EXCHANGE_RATE = 70;
@@ -29,10 +36,10 @@ export default function DashboardPage() {
     };
 
     const statCards = [
-        { title: 'Sales Today', value: `؋${Number(stats.salesToday).toLocaleString()}`, icon: DollarSign, color: 'text-green-600', bg: 'bg-green-100' },
+        { title: 'Sales Today', value: `؋${Math.round(Number(stats.salesToday)).toLocaleString()}`, icon: DollarSign, color: 'text-green-600', bg: 'bg-green-100' },
         { title: 'Invoices Today', value: stats.invoicesToday, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100' },
         { title: 'Low Stock Items', value: stats.lowStockItems, icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-100' },
-        { title: 'Customer Credit', value: `؋${(Number(stats.totalOutstandingCredit) * EXCHANGE_RATE).toFixed(0)}`, icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-100' },
+        { title: 'Customer Credit', value: `؋${Math.round(Number(stats.totalOutstandingCredit)).toLocaleString()}`, icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-100' },
     ];
 
     return (
@@ -60,6 +67,89 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Debt Summary Widget */}
+                {debtSummary && (
+                    <div className="bg-white p-6 rounded-xl shadow-sm border">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                {/* @ts-ignore */}
+                                <CreditCard className="text-blue-500" size={20} />
+                                Debt Management Overview
+                            </h2>
+                            <Link
+                                href="/debts"
+                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                                View All →
+                            </Link>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <p className="text-sm text-blue-600 font-medium">Total Outstanding</p>
+                                <p className="text-2xl font-bold text-blue-900 mt-1">
+                                    ؋{debtSummary.totalOutstandingAFN.toLocaleString()}
+                                </p>
+                                <p className="text-xs text-blue-600 mt-1">
+                                    ${debtSummary.totalOutstanding.toFixed(2)} USD
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="bg-red-50 p-3 rounded-lg border border-red-100">
+                                    <p className="text-xs text-red-600 font-medium">Overdue</p>
+                                    <p className="text-xl font-bold text-red-700 mt-1">
+                                        {debtSummary.overdueCount}
+                                    </p>
+                                </div>
+
+                                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                                    <p className="text-xs text-yellow-600 font-medium">Due Soon</p>
+                                    <p className="text-xl font-bold text-yellow-700 mt-1">
+                                        {debtSummary.dueSoonCount}
+                                    </p>
+                                </div>
+
+                                <div className="bg-green-50 p-3 rounded-lg border border-green-100">
+                                    <p className="text-xs text-green-600 font-medium">Active</p>
+                                    <p className="text-xl font-bold text-green-700 mt-1">
+                                        {debtSummary.activeCount}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="pt-2 border-t">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">Total Debtors:</span>
+                                    <span className="font-bold text-gray-900">{debtSummary.totalDebtors}</span>
+                                </div>
+                                <div className="flex justify-between text-sm mt-1">
+                                    <span className="text-gray-600">Active Debts:</span>
+                                    <span className="font-bold text-gray-900">{debtSummary.totalDebts}</span>
+                                </div>
+                            </div>
+
+                            {(debtSummary.overdueCount > 0 || debtSummary.dueSoonCount > 0) && (
+                                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                                    <div className="flex items-start gap-2">
+                                        {/* @ts-ignore */}
+                                        <AlertTriangle size={16} className="text-orange-600 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <p className="text-xs font-bold text-orange-900">Action Required</p>
+                                            <p className="text-xs text-orange-700 mt-1">
+                                                {debtSummary.overdueCount > 0 
+                                                    ? `${debtSummary.overdueCount} overdue payment${debtSummary.overdueCount > 1 ? 's' : ''} need${debtSummary.overdueCount === 1 ? 's' : ''} immediate attention`
+                                                    : `${debtSummary.dueSoonCount} payment${debtSummary.dueSoonCount > 1 ? 's' : ''} due within 24 hours`
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <div className="bg-white p-6 rounded-xl shadow-sm border min-h-[300px]">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -118,6 +208,7 @@ export default function DashboardPage() {
                         )}
                     </div>
                 </div>
+                
                 <div className="bg-white p-6 rounded-xl shadow-sm border min-h-[300px]">
                     <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
                     <div className="grid grid-cols-2 gap-4">
@@ -125,6 +216,7 @@ export default function DashboardPage() {
                         <Link href="/inventory" className="p-4 border rounded-lg hover:bg-gray-50 text-left font-medium block">Add Product</Link>
                         <Link href="/customers" className="p-4 border rounded-lg hover:bg-gray-50 text-left font-medium block">Add Customer</Link>
                         <Link href="/expenses" className="p-4 border rounded-lg hover:bg-gray-50 text-left font-medium block">Expenses</Link>
+                        <Link href="/debts" className="p-4 border rounded-lg hover:bg-gray-50 text-left font-medium block text-purple-600 bg-purple-50">Manage Debts</Link>
                         <Link href="/sales" className="p-4 border rounded-lg hover:bg-gray-50 text-left font-medium block text-blue-600 bg-blue-50">Sales History</Link>
                     </div>
                 </div>

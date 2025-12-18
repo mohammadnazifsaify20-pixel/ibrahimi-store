@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '../../lib/store';
 import Link from 'next/link';
-import { LayoutDashboard, Package, ShoppingCart, User, FileText, LogOut, Menu, X, ArrowLeft, Home, ClipboardList, Settings, History, DollarSign, Banknote } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, User, FileText, LogOut, Menu, X, ArrowLeft, Home, ClipboardList, Settings, History, DollarSign, Banknote, CreditCard } from 'lucide-react';
 import clsx from 'clsx';
 import ExchangeRateModal from '../../components/ExchangeRateModal';
 import { useSettingsStore } from '../../lib/settingsStore';
@@ -78,6 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { name: 'POS', href: '/pos', icon: ShoppingCart },
         { name: 'Sales', href: '/dashboard/sales', icon: ClipboardList },
         { name: 'Customers', href: '/customers', icon: User },
+        { name: 'Debts', href: '/debts', icon: CreditCard },
         { name: 'Reports', href: '/reports', icon: FileText },
         { name: 'Expenses', href: '/expenses', icon: Banknote },
         { name: 'Audit Logs', href: '/admin/logs', icon: History },

@@ -267,14 +267,14 @@ router.post('/:id/payment', authenticate, async (req: Request, res: Response) =>
                         }
                     });
 
-                    // Also update associated CreditEntry if exists (mark as CLEARED if paid)
+                    // Also update associated CreditEntry if exists (mark as SETTLED if paid)
                     if (newStatus === 'PAID') {
                         await tx.creditEntry.updateMany({
                             where: { invoiceId: invoice.id },
                             data: {
                                 paidAmount: { increment: paymentToApply },
                                 remainingBalance: 0,
-                                status: 'CLEARED'
+                                status: 'SETTLED'
                             }
                         });
                     } else {
@@ -313,7 +313,7 @@ router.post('/:id/payment', authenticate, async (req: Request, res: Response) =>
                     // Clear credit entries too
                     await tx.creditEntry.updateMany({
                         where: { invoiceId: inv.id },
-                        data: { status: 'CLEARED', remainingBalance: 0 }
+                        data: { status: 'SETTLED', remainingBalance: 0 }
                     });
                 }
             }

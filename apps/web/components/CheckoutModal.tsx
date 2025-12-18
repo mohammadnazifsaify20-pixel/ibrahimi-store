@@ -65,6 +65,10 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
     const [newCustomerName, setNewCustomerName] = useState('');
     const [newCustomerPhone, setNewCustomerPhone] = useState('');
     const [newCustomerEmail, setNewCustomerEmail] = useState('');
+    
+    // Credit Sale Fields
+    const [dueDate, setDueDate] = useState('');
+    const [debtNotes, setDebtNotes] = useState('');
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -168,8 +172,19 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
             if (returnChange && paidAFG > totalAFGReference) {
                 finalPaidAmountUSD = finalTotalUSD; // Cap at total (Change returned cash)
             }
+            
+            // Check if this is a credit sale (partial payment)
+            const outstanding = finalTotalUSD - finalPaidAmountUSD;
+            const isCreditSale = outstanding > 0.05; // Tolerance for rounding
+            
+            // Validate due date for credit sales
+            if (isCreditSale && paymentMethod === 'CREDIT' && !dueDate) {
+                setError('Due date is required for credit sales');
+                setLoading(false);
+                return;
+            }
 
-            const saleData = {
+            const saleData: any = {
                 customerId: customerId ? Number(customerId) : null,
                 items: items.map((i: any) => ({
                     productId: i.id,
@@ -183,6 +198,14 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                 paymentReference: 'POS Sale',
                 exchangeRate: currentExchangeRate,
             };
+            
+            // Add due date and notes for credit sales
+            if (isCreditSale && dueDate) {
+                saleData.dueDate = new Date(dueDate).toISOString();
+                if (debtNotes) {
+                    saleData.debtNotes = debtNotes;
+                }
+            }
 
             console.log('Sending Sale Data:', saleData); // Debug log
 
@@ -190,6 +213,10 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
             setLastSaleId(res.data.id);
             clearCart();
             onSuccess(); // Refresh parent data
+
+            // Reset credit sale fields
+            setDueDate('');
+            setDebtNotes('');
 
             // Show Success Options instead of closing
             setStep('success');
@@ -385,6 +412,44 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                                                 ))}
                                             </div>
                                         </div>
+
+                                        {/* Credit Sale Fields */}
+                                        {paymentMethod === 'CREDIT' && (
+                                            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 space-y-3">
+                                                <div className="flex items-center gap-2 text-yellow-800 mb-2">
+                                                    {/* @ts-ignore */}
+                                                    <AlertTriangle size={18} />
+                                                    <span className="text-sm font-bold">Credit Sale - Due Date Required</span>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Due Date <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={dueDate}
+                                                        onChange={(e) => setDueDate(e.target.value)}
+                                                        min={new Date().toISOString().split('T')[0]}
+                                                        className="block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+                                                        required
+                                                    />
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Notes (Optional)
+                                                    </label>
+                                                    <textarea
+                                                        value={debtNotes}
+                                                        onChange={(e) => setDebtNotes(e.target.value)}
+                                                        placeholder="Payment terms, agreement details, etc..."
+                                                        className="block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none resize-none"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Amount Paid (AFG)</label>

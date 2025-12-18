@@ -25,6 +25,8 @@ const createSaleSchema = z.object({
     paymentMethod: z.nativeEnum(PaymentMethod),
     paymentReference: z.string().optional(),
     exchangeRate: z.number().min(0).default(1),
+    dueDate: z.string().datetime().optional(), // Required for credit sales
+    debtNotes: z.string().optional(), // Optional notes for credit sales
 });
 
 // --- Customer Routes ---
@@ -81,7 +83,7 @@ router.get('/sales/:id', authenticate, async (req: Request, res: Response) => {
 // Create a new Sale (POS)
 router.post('/sales', authenticate, async (req: AuthRequest, res: Response) => {
     try {
-        const { customerId, items, tax, discount, paidAmount, paymentMethod, paymentReference, exchangeRate } = createSaleSchema.parse(req.body);
+        const { customerId, items, tax, discount, paidAmount, paymentMethod, paymentReference, exchangeRate, dueDate, debtNotes } = createSaleSchema.parse(req.body);
         const userId = req.user!.id;
 
         const result = await prisma.$transaction(async (tx) => {
@@ -185,6 +187,11 @@ router.post('/sales', authenticate, async (req: AuthRequest, res: Response) => {
             // For now, allow it to keep consistency.
             // 4. Handle Credit (Loan) if outstanding > 0 AND it is a real customer (optional check)
             if (outstanding > 0 && finalCustomerId) {
+                // Validate that dueDate is provided for credit sales
+                if (!dueDate) {
+                    throw new Error('Due date is required for credit sales');
+                }
+                
                 // Calculate AFN equivalent of the outstanding amount at THIS MOMENT's rate
                 // This "locks" the debt in AFN, preventing exchange rate fluctuations from affecting the owed amount in local currency.
                 const outstandingAFN = Number(outstanding) * Number(exchangeRate);
@@ -208,6 +215,8 @@ router.post('/sales', authenticate, async (req: AuthRequest, res: Response) => {
                         remainingBalance: outstanding,
                         // @ts-ignore
                         remainingBalanceAFN: outstandingAFN,
+                        dueDate: new Date(dueDate),
+                        notes: debtNotes || null,
                         status: 'ACTIVE'
                     }
                 });

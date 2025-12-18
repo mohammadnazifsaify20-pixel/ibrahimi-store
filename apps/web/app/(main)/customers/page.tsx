@@ -296,7 +296,9 @@ export default function CustomersPage() {
                                             </div>
                                         </td>
                                         <td className={`px-6 py-4 font-medium ${Number(customer.outstandingBalance) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            ؋{Math.floor(Number(customer.outstandingBalance) * 70).toFixed(0)}
+                                            ؋{(customer as any).outstandingBalanceAFN 
+                                                ? Math.round(Number((customer as any).outstandingBalanceAFN)).toLocaleString() 
+                                                : Math.round(Number(customer.outstandingBalance) * 70).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
                                             ؋{(Number(customer.creditLimit) * 70).toFixed(0)}

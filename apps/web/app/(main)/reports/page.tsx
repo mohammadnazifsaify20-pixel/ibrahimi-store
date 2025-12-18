@@ -98,9 +98,9 @@ export default function ReportsPage() {
     });
 
     const statCards = [
-        { title: 'Total Revenue Today', value: `؋${(Number(stats.salesToday) * EXCHANGE_RATE).toFixed(0)}`, icon: DollarSign, color: 'text-green-600', bg: 'bg-green-100' },
+        { title: 'Total Revenue Today', value: `؋${Math.round(Number(stats.salesToday)).toLocaleString()}`, icon: DollarSign, color: 'text-green-600', bg: 'bg-green-100' },
         { title: 'Invoices Generated', value: stats.invoicesToday, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100' },
-        { title: 'Pending Credits', value: `؋${(Number(stats.totalOutstandingCredit) * EXCHANGE_RATE).toFixed(0)}`, icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-100' },
+        { title: 'Pending Credits', value: `؋${Math.round(Number(stats.totalOutstandingCredit)).toLocaleString()}`, icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-100' },
         { title: 'Low Stock Alerts', value: stats.lowStockItems, icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-100' },
     ];
 
@@ -251,7 +251,9 @@ export default function ReportsPage() {
                                                 <td className="px-6 py-4 font-medium text-gray-900">{debtor.name}</td>
                                                 <td className="px-6 py-4 text-gray-600">{debtor.phone || '-'}</td>
                                                 <td className="px-6 py-4 font-bold text-red-600">
-                                                    ؋{(Number(debtor.outstandingBalance) * EXCHANGE_RATE).toFixed(0)}
+                                                    ؋{debtor.outstandingBalanceAFN 
+                                                        ? Math.round(Number(debtor.outstandingBalanceAFN)).toLocaleString() 
+                                                        : Math.round(Number(debtor.outstandingBalance) * EXCHANGE_RATE).toLocaleString()}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <a href={`/customers/${debtor.id}`} className="text-blue-600 hover:underline">View</a>
