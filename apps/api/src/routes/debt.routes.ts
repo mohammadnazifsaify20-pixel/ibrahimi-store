@@ -274,8 +274,8 @@ router.get('/debts/:id', authenticate, async (req: Request, res: Response) => {
 
 // Record a debt payment
 const debtPaymentSchema = z.object({
-    amount: z.number().positive(),
-    amountAFN: z.number().optional(),
+    amount: z.number().positive().optional(),
+    amountAFN: z.number().positive().optional(),
     paymentMethod: z.nativeEnum(PaymentMethod),
     reference: z.string().optional(),
     notes: z.string().optional(),
@@ -286,6 +286,11 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
         const { id } = req.params;
         const { amount, amountAFN, paymentMethod, reference, notes } = debtPaymentSchema.parse(req.body);
         const userId = req.user!.id;
+        
+        // Ensure at least one amount is provided
+        if (!amount && !amountAFN) {
+            throw new Error('Payment amount is required');
+        }
         
         const result = await prisma.$transaction(async (tx) => {
             // Get the debt
@@ -304,7 +309,7 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
             
             // Use AFN amounts directly - no USD conversion needed
             const remainingBalanceAFN = Number(debt.remainingBalanceAFN) || 0;
-            const paymentAmountAFN = amountAFN || 0;
+            const paymentAmountAFN = amountAFN || (amount ? amount * Number(debt.invoice.exchangeRate) : 0);
             
             // Allow paying up to remaining balance with 10 AFN tolerance for rounding
             if (paymentAmountAFN > remainingBalanceAFN + 10) {
