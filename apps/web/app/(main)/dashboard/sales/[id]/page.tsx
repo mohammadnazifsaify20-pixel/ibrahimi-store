@@ -152,7 +152,9 @@ export default function InvoicePage() {
                     <div className="w-72 space-y-3">
                         <div className="flex justify-between text-gray-600">
                             <span>Subtotal (AFG) / جمع فرعی:</span>
-                            <span className="font-medium">؋{invoice.subtotalLocal ? Math.floor(Number(invoice.subtotalLocal)).toLocaleString() : Math.floor(Number(invoice.subtotal) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
+                            <span className="font-medium">
+                                ؋{Math.floor(invoice.subtotalLocal ? Number(invoice.subtotalLocal) : (Number(invoice.subtotal) * Number(invoice.exchangeRate || 70))).toLocaleString()}
+                            </span>
                         </div>
                         {Number(invoice.tax) > 0 && (
                             <div className="flex justify-between text-gray-600">
@@ -168,7 +170,9 @@ export default function InvoicePage() {
                         )}
                         <div className="flex justify-between text-xl font-bold text-gray-900 border-t pt-3">
                             <span>Total (AFG) / مجموع:</span>
-                            <span>؋{invoice.totalLocal ? Math.floor(Number(invoice.totalLocal)).toLocaleString() : Math.floor(Number(invoice.total) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
+                            <span>
+                                ؋{Math.floor(invoice.totalLocal ? Number(invoice.totalLocal) : (Number(invoice.total) * Number(invoice.exchangeRate || 70))).toLocaleString()}
+                            </span>
                         </div>
 
                         {/* Return / Refund Info */}
