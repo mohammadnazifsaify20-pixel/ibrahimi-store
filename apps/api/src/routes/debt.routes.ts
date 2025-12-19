@@ -399,13 +399,14 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
             }
             
             // Update invoice if applicable
-            const newInvoiceOutstanding = Number(debt.invoice.outstandingAmount) - actualPayment;
+            const currentInvoiceOutstanding = Number(debt.invoice.outstandingAmount) || 0;
+            const newInvoiceOutstanding = Math.max(0, currentInvoiceOutstanding - actualPayment);
             const newInvoiceStatus = newInvoiceOutstanding <= 0 ? 'PAID' : debt.invoice.status;
             
             await tx.invoice.update({
                 where: { id: debt.invoiceId },
                 data: {
-                    outstandingAmount: newInvoiceOutstanding < 0 ? 0 : newInvoiceOutstanding,
+                    outstandingAmount: newInvoiceOutstanding,
                     paidAmount: { increment: actualPayment },
                     status: newInvoiceStatus as any
                 }
