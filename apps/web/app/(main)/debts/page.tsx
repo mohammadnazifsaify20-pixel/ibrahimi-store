@@ -1300,7 +1300,9 @@ export default function DebtorsPage() {
             setPaymentNotes('');
             setPaymentError('');
         } catch (error: any) {
-            setPaymentError(error.response?.data?.message || 'Failed to record payment');
+            console.error('Payment error:', error);
+            const errorMsg = error.response?.data?.message || error.message || 'Failed to record payment';
+            setPaymentError(errorMsg);
         } finally {
             setPaymentLoading(false);
         }

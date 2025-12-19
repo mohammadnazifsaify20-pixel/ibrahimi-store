@@ -433,7 +433,8 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
         res.json(result);
     } catch (error: any) {
         if (error instanceof ZodError) {
-            return res.status(400).json({ errors: error.issues });
+            const errorMessages = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+            return res.status(400).json({ message: `Validation error: ${errorMessages}` });
         }
         
         console.error('Error recording debt payment:', error);
