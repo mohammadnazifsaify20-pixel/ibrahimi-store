@@ -344,16 +344,17 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
             const newRemainingBalance = Number(debt.remainingBalance) - actualPayment;
             const newRemainingBalanceAFN = Number(debt.remainingBalanceAFN || 0) - finalAmountAFN;
             
-            // Calculate new status
-            const newStatus = calculateDebtStatus(debt.dueDate, newRemainingBalance);
+            // Calculate new status - ensure it's SETTLED if remaining balance is very small (< 1 AFN)
+            const isFullyPaid = newRemainingBalanceAFN < 1 || newRemainingBalance < 0.01;
+            const newStatus = isFullyPaid ? DebtStatus.SETTLED : calculateDebtStatus(debt.dueDate, newRemainingBalance);
             
             const updatedDebt = await tx.creditEntry.update({
                 where: { id: debt.id },
                 data: {
                     paidAmount: newPaidAmount,
                     paidAmountAFN: newPaidAmountAFN,
-                    remainingBalance: newRemainingBalance,
-                    remainingBalanceAFN: newRemainingBalanceAFN,
+                    remainingBalance: isFullyPaid ? 0 : newRemainingBalance,
+                    remainingBalanceAFN: isFullyPaid ? 0 : newRemainingBalanceAFN,
                     status: newStatus
                 }
             });
