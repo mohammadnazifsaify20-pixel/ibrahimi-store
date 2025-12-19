@@ -321,6 +321,11 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
             // Calculate USD equivalent for backward compatibility
             const actualPayment = finalAmountAFN / Number(debt.invoice.exchangeRate);
             
+            // Validate calculated amounts
+            if (!actualPayment || isNaN(actualPayment) || actualPayment <= 0) {
+                throw new Error('Invalid payment amount calculated');
+            }
+            
             // Record the payment
             const payment = await tx.debtPayment.create({
                 data: {
