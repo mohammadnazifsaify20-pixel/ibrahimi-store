@@ -63,9 +63,9 @@ export default function InvoicePage() {
     if (loading) return <div className="p-8 text-center text-gray-500">Loading invoice...</div>;
     if (!invoice) return <div className="p-8 text-center text-red-500">Invoice not found</div>;
 
-    // Calculate amounts
+    // Calculate amounts in AFN
     const exchangeRate = Number(invoice.exchangeRate || 70);
-    const subtotalAFN = invoice.subtotalLocal ? Number(invoice.subtotalLocal) : (Number(invoice.subtotal) * exchangeRate);
+    const subtotalAFN = Number(invoice.subtotal) * exchangeRate;
     const taxAFN = Number(invoice.tax) * exchangeRate;
     const discountAFN = Number(invoice.discount) * exchangeRate;
     const totalAFN = invoice.totalLocal ? Number(invoice.totalLocal) : (Number(invoice.total) * exchangeRate);
