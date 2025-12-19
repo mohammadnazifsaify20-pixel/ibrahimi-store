@@ -96,23 +96,23 @@ export default function InvoicePage() {
                     </div>
                     <div className="text-right">
                         <h3 className="text-xl font-bold text-gray-900">{invoice.invoiceNumber}</h3>
-                        <p className="text-gray-500 mt-1">Date: {format(new Date(invoice.date), 'PPP')}</p>
-                        <p className="text-gray-500">Status: <span className="font-bold uppercase text-gray-900">{invoice.status}</span></p>
+                        <p className="text-gray-500 mt-1">Date / تاریخ: {format(new Date(invoice.date), 'PPP')}</p>
+                        <p className="text-gray-500">Status / وضعیت: <span className="font-bold uppercase text-gray-900">{invoice.status}</span></p>
                     </div>
                 </div>
 
                 {/* Customer & Bill To */}
                 <div className="grid grid-cols-2 gap-8 mb-8">
                     <div>
-                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Bill To</h4>
+                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Bill To / صورت حساب برای</h4>
                         <p className="font-bold text-gray-900">{invoice.customer?.name || 'Walk-in Customer'}</p>
                         {/* @ts-ignore */}
-                        {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-xs">ID: {invoice.customer.displayId}</p>}
-                        {invoice.customer?.phone && <p className="text-gray-600">{invoice.customer.phone}</p>}
-                        {invoice.customer?.address && <p className="text-gray-600">{invoice.customer.address}</p>}
+                        {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-xs">ID / شناسنامه: {invoice.customer.displayId}</p>}
+                        {invoice.customer?.phone && <p className="text-gray-600">Phone / تلیفون: {invoice.customer.phone}</p>}
+                        {invoice.customer?.address && <p className="text-gray-600">Address / آدرس: {invoice.customer.address}</p>}
                     </div>
                     <div className="text-right">
-                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Served By</h4>
+                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Served By / فروشنده</h4>
                         <p className="font-medium text-gray-900">{invoice.user.name}</p>
                     </div>
                 </div>
@@ -121,10 +121,10 @@ export default function InvoicePage() {
                 <table className="w-full mb-8">
                     <thead className="bg-gray-50 text-gray-600 font-bold text-sm uppercase">
                         <tr>
-                            <th className="px-4 py-3 text-left">Item</th>
-                            <th className="px-4 py-3 text-right">Qty</th>
-                            <th className="px-4 py-3 text-right">Price (AFG)</th>
-                            <th className="px-4 py-3 text-right">Total (AFG)</th>
+                            <th className="px-4 py-3 text-left">Item / جنس</th>
+                            <th className="px-4 py-3 text-right">Qty / تعداد</th>
+                            <th className="px-4 py-3 text-right">Price (AFG) / قیمت</th>
+                            <th className="px-4 py-3 text-right">Total (AFG) / مجموع</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -151,24 +151,24 @@ export default function InvoicePage() {
                 <div className="flex justify-end">
                     <div className="w-72 space-y-3">
                         <div className="flex justify-between text-gray-600">
-                            <span>Subtotal (AFG):</span>
-                            <span className="font-medium">؋{(Number(invoice.subtotal) * Number(invoice.exchangeRate || 70)).toFixed(0)}</span>
+                            <span>Subtotal (AFG) / جمع فرعی:</span>
+                            <span className="font-medium">؋{invoice.subtotalLocal ? Math.floor(Number(invoice.subtotalLocal)).toLocaleString() : Math.floor(Number(invoice.subtotal) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
                         </div>
                         {Number(invoice.tax) > 0 && (
                             <div className="flex justify-between text-gray-600">
-                                <span>Tax:</span>
-                                <span className="font-medium">؋{(Number(invoice.tax) * Number(invoice.exchangeRate || 70)).toFixed(0)}</span>
+                                <span>Tax / مالیه:</span>
+                                <span className="font-medium">؋{Math.floor(Number(invoice.tax) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
                             </div>
                         )}
                         {Number(invoice.discount) > 0 && (
                             <div className="flex justify-between text-green-600">
-                                <span>Discount:</span>
-                                <span className="font-medium">-؋{(Number(invoice.discount) * Number(invoice.exchangeRate || 70)).toFixed(0)}</span>
+                                <span>Discount / تخفیف:</span>
+                                <span className="font-medium">-؋{Math.floor(Number(invoice.discount) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
                             </div>
                         )}
                         <div className="flex justify-between text-xl font-bold text-gray-900 border-t pt-3">
-                            <span>Total (AFG):</span>
-                            <span>؋{invoice.totalLocal ? Number(invoice.totalLocal).toFixed(0) : (Number(invoice.total) * Number(invoice.exchangeRate || 70)).toFixed(0)}</span>
+                            <span>Total (AFG) / مجموع:</span>
+                            <span>؋{invoice.totalLocal ? Math.floor(Number(invoice.totalLocal)).toLocaleString() : Math.floor(Number(invoice.total) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
                         </div>
 
                         {/* Return / Refund Info */}
@@ -180,12 +180,12 @@ export default function InvoicePage() {
                                 return (
                                     <>
                                         <div className="flex justify-between text-red-600 border-b pb-2">
-                                            <span>Less Returns:</span>
-                                            <span>-؋{returnedValAFN.toFixed(0)}</span>
+                                            <span>Less Returns / برگشتی:</span>
+                                            <span>-؋{Math.floor(returnedValAFN).toLocaleString()}</span>
                                         </div>
                                         <div className="flex justify-between text-lg font-bold text-gray-800 pt-1">
-                                            <span>Net Total (AFG):</span>
-                                            <span>؋{((Number(invoice.total) - returnedVal) * Number(invoice.exchangeRate || 70)).toFixed(0)}</span>
+                                            <span>Net Total (AFG) / مجموع خالص:</span>
+                                            <span>؋{Math.floor((Number(invoice.total) - returnedVal) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
                                         </div>
                                     </>
                                 );
@@ -194,21 +194,32 @@ export default function InvoicePage() {
                         })()}
 
                         <div className="flex justify-between text-gray-600 pt-2 border-t mt-2">
-                            <span>Paid Amount (AFG):</span>
-                            <span className="font-medium text-green-600">؋{(Number(invoice.paidAmount) * Number(invoice.exchangeRate || 70)).toFixed(0)}</span>
+                            <span>Paid Amount (AFG) / پرداخت شده:</span>
+                            <span className="font-medium text-green-600">؋{Math.floor(Number(invoice.paidAmount) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
                         </div>
                         {Number(invoice.outstandingAmount) > 0 && (
                             <div className="flex justify-between text-red-600 font-bold">
-                                <span>Balance Due (AFG):</span>
-                                <span>؋{(Number(invoice.outstandingAmount) * Number(invoice.exchangeRate || 70)).toFixed(0)}</span>
+                                <span>Balance Due (AFG) / باقیمانده:</span>
+                                <span>؋{Math.floor(Number(invoice.outstandingAmount) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
                             </div>
                         )}
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="mt-12 pt-8 border-t text-center text-gray-500 text-sm">
-                    <p>Thank you for your business!</p>
+                <div className="mt-12 pt-8 border-t space-y-2 text-center">
+                    <p className="text-gray-700 font-bold">Thank you for your business! / از خریداری شما متشکریم</p>
+                    <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mt-4">
+                        <p className="text-red-600 font-bold text-sm">
+                            ⚠️ RETURN POLICY / قانون برگشت جنس ⚠️
+                        </p>
+                        <p className="text-gray-800 font-medium text-sm mt-2" style={{ direction: 'rtl' }}>
+                            جنس فروخته شده بعد از بیست و چهار (24) ساعت برگردانده نمیشود
+                        </p>
+                        <p className="text-gray-700 text-xs mt-1">
+                            Items sold cannot be returned after 24 hours
+                        </p>
+                    </div>
                 </div>
             </div>
 
