@@ -63,6 +63,15 @@ export default function InvoicePage() {
     if (loading) return <div className="p-8 text-center text-gray-500">Loading invoice...</div>;
     if (!invoice) return <div className="p-8 text-center text-red-500">Invoice not found</div>;
 
+    // Calculate amounts
+    const exchangeRate = Number(invoice.exchangeRate || 70);
+    const subtotalAFN = invoice.subtotalLocal ? Number(invoice.subtotalLocal) : (Number(invoice.subtotal) * exchangeRate);
+    const taxAFN = Number(invoice.tax) * exchangeRate;
+    const discountAFN = Number(invoice.discount) * exchangeRate;
+    const totalAFN = invoice.totalLocal ? Number(invoice.totalLocal) : (Number(invoice.total) * exchangeRate);
+    const paidAFN = Number(invoice.paidAmount) * exchangeRate;
+    const outstandingAFN = Number(invoice.outstandingAmount) * exchangeRate;
+
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex justify-between items-center print:hidden">
@@ -152,33 +161,29 @@ export default function InvoicePage() {
                     <div className="w-72 space-y-3">
                         <div className="flex justify-between text-gray-600">
                             <span>Subtotal (AFG) / جمع فرعی:</span>
-                            <span className="font-medium">
-                                ؋{Math.floor(invoice.subtotalLocal ? Number(invoice.subtotalLocal) : (Number(invoice.subtotal) * Number(invoice.exchangeRate || 70))).toLocaleString()}
-                            </span>
+                            <span className="font-medium">؋{Math.floor(subtotalAFN).toLocaleString()}</span>
                         </div>
                         {Number(invoice.tax) > 0 && (
                             <div className="flex justify-between text-gray-600">
                                 <span>Tax / مالیه:</span>
-                                <span className="font-medium">؋{Math.floor(Number(invoice.tax) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
+                                <span className="font-medium">؋{Math.floor(taxAFN).toLocaleString()}</span>
                             </div>
                         )}
                         {Number(invoice.discount) > 0 && (
                             <div className="flex justify-between text-green-600">
                                 <span>Discount / تخفیف:</span>
-                                <span className="font-medium">-؋{Math.floor(Number(invoice.discount) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
+                                <span className="font-medium">-؋{Math.floor(discountAFN).toLocaleString()}</span>
                             </div>
                         )}
                         <div className="flex justify-between text-xl font-bold text-gray-900 border-t pt-3">
                             <span>Total (AFG) / مجموع:</span>
-                            <span>
-                                ؋{Math.floor(invoice.totalLocal ? Number(invoice.totalLocal) : (Number(invoice.total) * Number(invoice.exchangeRate || 70))).toLocaleString()}
-                            </span>
+                            <span>؋{Math.floor(totalAFN).toLocaleString()}</span>
                         </div>
 
                         {/* Return / Refund Info */}
                         {(() => {
                             const returnedVal = invoice.items.reduce((acc, item) => acc + ((item.returnedQuantity || 0) * Number(item.unitPrice)), 0);
-                            const returnedValAFN = returnedVal * Number(invoice.exchangeRate || 70);
+                            const returnedValAFN = returnedVal * exchangeRate;
 
                             if (returnedVal > 0) {
                                 return (
@@ -189,7 +194,7 @@ export default function InvoicePage() {
                                         </div>
                                         <div className="flex justify-between text-lg font-bold text-gray-800 pt-1">
                                             <span>Net Total (AFG) / مجموع خالص:</span>
-                                            <span>؋{Math.floor((Number(invoice.total) - returnedVal) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
+                                            <span>؋{Math.floor((Number(invoice.total) - returnedVal) * exchangeRate).toLocaleString()}</span>
                                         </div>
                                     </>
                                 );
@@ -199,12 +204,12 @@ export default function InvoicePage() {
 
                         <div className="flex justify-between text-gray-600 pt-2 border-t mt-2">
                             <span>Paid Amount (AFG) / پرداخت شده:</span>
-                            <span className="font-medium text-green-600">؋{Math.floor(Number(invoice.paidAmount) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
+                            <span className="font-medium text-green-600">؋{Math.floor(paidAFN).toLocaleString()}</span>
                         </div>
                         {Number(invoice.outstandingAmount) > 0 && (
                             <div className="flex justify-between text-red-600 font-bold">
                                 <span>Balance Due (AFG) / باقیمانده:</span>
-                                <span>؋{Math.floor(Number(invoice.outstandingAmount) * Number(invoice.exchangeRate || 70)).toLocaleString()}</span>
+                                <span>؋{Math.floor(outstandingAFN).toLocaleString()}</span>
                             </div>
                         )}
                     </div>
