@@ -394,14 +394,14 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
             }
             
             // Update invoice if applicable
-            const newInvoiceOutstanding = Number(debt.invoice.outstandingAmount) - amount;
+            const newInvoiceOutstanding = Number(debt.invoice.outstandingAmount) - actualPayment;
             const newInvoiceStatus = newInvoiceOutstanding <= 0 ? 'PAID' : debt.invoice.status;
             
             await tx.invoice.update({
                 where: { id: debt.invoiceId },
                 data: {
                     outstandingAmount: newInvoiceOutstanding < 0 ? 0 : newInvoiceOutstanding,
-                    paidAmount: { increment: amount },
+                    paidAmount: { increment: actualPayment },
                     status: newInvoiceStatus as any
                 }
             });
@@ -411,7 +411,7 @@ router.post('/debts/:id/payments', authenticate, async (req: AuthRequest, res: R
                 data: {
                     invoiceId: debt.invoiceId,
                     customerId: debt.customerId,
-                    amount,
+                    amount: actualPayment,
                     amountAFN: finalAmountAFN,
                     method: paymentMethod,
                     reference: reference || 'Debt Payment'
