@@ -67,30 +67,43 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
 
             // Create temporary card element
             const cardHTML = `
-                <div style="width: 323.15px; height: 204px; background: white; border: 2px solid black; border-radius: 16px; padding: 16px; position: relative; font-family: Arial, sans-serif;">
-                    <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 8px; margin-bottom: 8px;">
-                        <h1 style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; line-height: 1.2;">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
-                        <h2 style="font-size: 12px; font-weight: bold; margin: 4px 0; line-height: 1.2;">(شرکت پرزه جات ابراهیمی و برادران)</h2>
-                        <p style="font-size: 10px; font-weight: bold; background: black; color: white; display: inline-block; padding: 2px 8px; border-radius: 12px; margin: 4px 0;">VIP CUSTOMER CARD</p>
+                <div style="width: 323.5px; height: 204px; background: white; border: 3px solid black; border-radius: 20px; padding: 16px; position: relative; font-family: Arial, sans-serif; overflow: hidden; display: flex; flex-direction: column; align-items: center;">
+                    <!-- Watermark -->
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0.08; z-index: 0;">
+                        <img src="/logo.png" style="width: 75%; height: auto;" />
                     </div>
-                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 8px 0;">
-                        <div style="text-center; width: 100%;">
-                            <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Customer Name</p>
-                            <h2 style="font-size: 24px; font-weight: bold; margin: 0; padding: 0 8px;">${customer.name}</h2>
+
+                    <!-- Header -->
+                    <div style="position: relative; z-index: 10; width: 100%; display: flex; flex-direction: column; align-items: center;">
+                        <div style="width: 32px; height: 32px; margin-bottom: 4px;">
+                             <img src="/logo.png" style="width: 100%; height: 100%; object-fit: contain;" />
                         </div>
-                        <div style="margin-top: 16px; display: flex; justify-content: space-between; width: 100%; padding: 0 16px;">
-                            <div style="text-align: left;">
-                                <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Store Contact</p>
-                                <p style="font-family: 'Courier New', monospace; font-weight: bold; font-size: 14px; margin: 0;">+971 50 123 4567</p>
-                            </div>
-                            <div style="text-align: right;">
-                                <p style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: bold; margin: 0 0 4px 0;">Customer ID</p>
-                                <p style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; margin: 0;">${customer.displayId || `EQ${String(customer.id).padStart(6, '0')}`}</p>
-                            </div>
+                        <h1 style="font-size: 9px; font-weight: 900; text-transform: uppercase; text-align: center; line-height: 1.2; letter-spacing: 0.5px; color: black; margin: 0; width: 100%;">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
+                        <h2 style="font-size: 9px; font-weight: bold; text-align: center; line-height: 1.2; margin: 2px 0 0 0; color: black; font-family: sans-serif;">(شرکت پرزه جات ابراهیمی و برادران)</h2>
+                        <div style="background: black; color: white; padding: 2px 16px; border-radius: 9999px; margin: 4px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <p style="font-size: 7px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0;">VIP CUSTOMER CARD</p>
                         </div>
                     </div>
-                    <div style="text-align: center; font-size: 10px; padding-top: 8px; border-top: 1px solid black; margin-top: 8px;">
-                        Please present this card for identification
+
+                    <!-- Separator -->
+                    <div style="position: relative; z-index: 10; width: 100%; height: 2px; background: black; margin: 2px 0;"></div>
+
+                    <!-- Content -->
+                    <div style="position: relative; z-index: 10; width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                        <p style="font-size: 9px; text-transform: uppercase; color: #6b7280; font-weight: bold; margin: 0 0 2px 0;">CUSTOMER NAME</p>
+                        <h2 style="font-size: 24px; font-weight: 900; color: black; line-height: 1; text-align: center; margin: 0; font-family: sans-serif;">${customer.name}</h2>
+                    </div>
+
+                    <!-- Footer -->
+                    <div style="position: relative; z-index: 10; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                        <div style="text-align: left;">
+                            <p style="font-size: 8px; text-transform: uppercase; color: #6b7280; font-weight: bold; line-height: 1; margin: 0 0 2px 0;">PHONE</p>
+                            <p style="font-size: 10px; font-weight: bold; font-family: monospace; line-height: 1; margin: 0;">${customer.phone || 'N/A'}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="font-size: 8px; text-transform: uppercase; color: #6b7280; font-weight: bold; line-height: 1; margin: 0 0 2px 0;">CUSTOMER ID</p>
+                            <p style="font-size: 10px; font-weight: bold; font-family: monospace; line-height: 1; margin: 0;">${customer.displayId || customer.id}</p>
+                        </div>
                     </div>
                 </div>
             `;
