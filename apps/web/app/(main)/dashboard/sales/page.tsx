@@ -86,8 +86,8 @@ export default function SalesPage() {
                                         <td className="px-6 py-4 font-medium text-blue-600">{invoice.invoiceNumber}</td>
                                         <td className="px-6 py-4 text-gray-600">{format(new Date(invoice.date), 'MMM d, yyyy')}</td>
                                         <td className="px-6 py-4 text-gray-900">{invoice.customer?.name || 'Walk-in'}</td>
-                                        <td className="px-6 py-4 font-bold text-gray-900">؋{(Number(invoice.total) * 70).toFixed(0)}</td>
-                                        <td className="px-6 py-4 text-green-600">؋{(Number(invoice.paidAmount) * 70).toFixed(0)}</td>
+                                        <td className="px-6 py-4 font-bold text-gray-900">؋{(Number(invoice.total) * ((invoice as any).exchangeRate || 70)).toFixed(0)}</td>
+                                        <td className="px-6 py-4 text-green-600">؋{(Number(invoice.paidAmount) * ((invoice as any).exchangeRate || 70)).toFixed(0)}</td>
                                         <td className="px-6 py-4">
                                             <span className={clsx(
                                                 "px-2 py-1 rounded-full text-xs font-bold",

@@ -247,7 +247,7 @@ export default function SalesPage() {
                                             {sale.customer?.name || 'Walk-in'}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-gray-900">
-                                            ؋{sale.totalLocal ? Number(sale.totalLocal).toFixed(0) : (Number(sale.total) * 70).toFixed(0)}
+                                            ؋{sale.totalLocal ? Number(sale.totalLocal).toFixed(0) : (Number(sale.total) * (sale.exchangeRate || 70)).toFixed(0)}
                                         </td>
                                         <td className="px-6 py-4 text-green-600">
                                             ؋{sale.paidAmount ? (Number(sale.paidAmount) * (sale.exchangeRate || 70)).toFixed(0) : '0'}
@@ -405,200 +405,199 @@ export default function SalesPage() {
                                         <img src="/logo.png" alt="" className="w-96 h-auto" style={{ filter: 'blur(2px)' }} />
                                     </div>
                                     <div className="relative z-10" id="invoice-content">
-                                    {invoiceLoading ? (
-                                        <div className="flex justify-center items-center py-12">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                                        </div>
-                                    ) : selectedInvoice ? (
-                                        <>
-                                            {/* Company Header with Logo */}
-                                            <div className="border-b-2 pb-4 mb-6 print:border-b" id="invoice-header">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-4" id="company-info">
-                                                        <img 
-                                                            src="/logo.png" 
-                                                            alt="Company Logo" 
-                                                            className="h-20 w-auto invoice-logo" 
-                                                            id="invoice-logo"
-                                                            style={{ display: 'block', maxHeight: '80px', width: 'auto' }}
-                                                        />
-                                                        <div>
-                                                            <h1 className="text-xl font-bold text-gray-900">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
-                                                            <p className="text-sm text-gray-600 mt-1">Motor Parts & Accessories</p>
+                                        {invoiceLoading ? (
+                                            <div className="flex justify-center items-center py-12">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                            </div>
+                                        ) : selectedInvoice ? (
+                                            <>
+                                                {/* Company Header with Logo */}
+                                                <div className="border-b-2 pb-4 mb-6 print:border-b" id="invoice-header">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-4" id="company-info">
+                                                            <img
+                                                                src="/logo.png"
+                                                                alt="Company Logo"
+                                                                className="h-20 w-auto invoice-logo"
+                                                                id="invoice-logo"
+                                                                style={{ display: 'block', maxHeight: '80px', width: 'auto' }}
+                                                            />
+                                                            <div>
+                                                                <h1 className="text-xl font-bold text-gray-900">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
+                                                                <p className="text-sm text-gray-600 mt-1">Motor Parts & Accessories</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2 print:hidden">
+                                                            <button
+                                                                onClick={() => window.print()}
+                                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                                            >
+                                                                Print Invoice
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setIsViewModalOpen(false)}
+                                                                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
+                                                            >
+                                                                {/* @ts-ignore */}
+                                                                <X size={24} />
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                    <div className="flex gap-2 print:hidden">
-                                                        <button
-                                                            onClick={() => window.print()}
-                                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                                                        >
-                                                            Print Invoice
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setIsViewModalOpen(false)}
-                                                            className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
-                                                        >
-                                                            {/* @ts-ignore */}
-                                                            <X size={24} />
-                                                        </button>
+                                                </div>
+
+                                                {/* Invoice Header */}
+                                                <div className="flex justify-between items-start mb-6">
+                                                    <div className="flex-1">
+                                                        <Dialog.Title as="h2" className="text-3xl font-bold text-gray-900">
+                                                            Invoice {selectedInvoice.invoiceNumber}
+                                                        </Dialog.Title>
+                                                        <p className="text-sm text-gray-500 mt-1">
+                                                            Date: {new Date(selectedInvoice.date).toLocaleString()}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Invoice Header */}
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className="flex-1">
-                                                    <Dialog.Title as="h2" className="text-3xl font-bold text-gray-900">
-                                                        Invoice {selectedInvoice.invoiceNumber}
-                                                    </Dialog.Title>
-                                                    <p className="text-sm text-gray-500 mt-1">
-                                                        Date: {new Date(selectedInvoice.date).toLocaleString()}
+                                                {/* Customer Info */}
+                                                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                                    <h3 className="font-bold text-gray-900 mb-2">Customer Information</h3>
+                                                    <p className="text-gray-700">
+                                                        <span className="font-medium">Name:</span> {selectedInvoice.customer?.name || 'Walk-in Customer'}
                                                     </p>
+                                                    {selectedInvoice.customer?.email && (
+                                                        <p className="text-gray-700">
+                                                            <span className="font-medium">Email:</span> {selectedInvoice.customer.email}
+                                                        </p>
+                                                    )}
+                                                    {selectedInvoice.customer?.phone && (
+                                                        <p className="text-gray-700">
+                                                            <span className="font-medium">Phone:</span> {selectedInvoice.customer.phone}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                            </div>
 
-                                            {/* Customer Info */}
-                                            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                                                <h3 className="font-bold text-gray-900 mb-2">Customer Information</h3>
-                                                <p className="text-gray-700">
-                                                    <span className="font-medium">Name:</span> {selectedInvoice.customer?.name || 'Walk-in Customer'}
-                                                </p>
-                                                {selectedInvoice.customer?.email && (
-                                                    <p className="text-gray-700">
-                                                        <span className="font-medium">Email:</span> {selectedInvoice.customer.email}
-                                                    </p>
-                                                )}
-                                                {selectedInvoice.customer?.phone && (
-                                                    <p className="text-gray-700">
-                                                        <span className="font-medium">Phone:</span> {selectedInvoice.customer.phone}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            {/* Items Table */}
-                                            <div className="mb-6">
-                                                <h3 className="font-bold text-gray-900 mb-3">Invoice Items</h3>
-                                                <div className="overflow-x-auto border rounded-lg">
-                                                    <table className="w-full text-sm">
-                                                        <thead className="bg-gray-50 border-b">
-                                                            <tr>
-                                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Product</th>
-                                                                <th className="px-4 py-3 text-right font-medium text-gray-600">Quantity</th>
-                                                                <th className="px-4 py-3 text-right font-medium text-gray-600">Unit Price</th>
-                                                                <th className="px-4 py-3 text-right font-medium text-gray-600">Discount</th>
-                                                                <th className="px-4 py-3 text-right font-medium text-gray-600">Total</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y">
-                                                            {selectedInvoice.items?.map((item: any) => (
-                                                                <tr key={item.id} className="hover:bg-gray-50">
-                                                                    <td className="px-4 py-3 text-gray-900">
-                                                                        {item.product?.name || 'Product'}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right text-gray-700">
-                                                                        {item.quantity}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right text-gray-700">
-                                                                        ${Number(item.unitPrice).toFixed(2)}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right text-gray-700">
-                                                                        ${Number(item.discount || 0).toFixed(2)}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right font-medium text-gray-900">
-                                                                        ${((Number(item.unitPrice) * item.quantity) - Number(item.discount || 0)).toFixed(2)}
-                                                                    </td>
+                                                {/* Items Table */}
+                                                <div className="mb-6">
+                                                    <h3 className="font-bold text-gray-900 mb-3">Invoice Items</h3>
+                                                    <div className="overflow-x-auto border rounded-lg">
+                                                        <table className="w-full text-sm">
+                                                            <thead className="bg-gray-50 border-b">
+                                                                <tr>
+                                                                    <th className="px-4 py-3 text-left font-medium text-gray-600">Product</th>
+                                                                    <th className="px-4 py-3 text-right font-medium text-gray-600">Quantity</th>
+                                                                    <th className="px-4 py-3 text-right font-medium text-gray-600">Unit Price</th>
+                                                                    <th className="px-4 py-3 text-right font-medium text-gray-600">Discount</th>
+                                                                    <th className="px-4 py-3 text-right font-medium text-gray-600">Total</th>
                                                                 </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                                            </thead>
+                                                            <tbody className="divide-y">
+                                                                {selectedInvoice.items?.map((item: any) => (
+                                                                    <tr key={item.id} className="hover:bg-gray-50">
+                                                                        <td className="px-4 py-3 text-gray-900">
+                                                                            {item.product?.name || 'Product'}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right text-gray-700">
+                                                                            {item.quantity}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right text-gray-700">
+                                                                            ${Number(item.unitPrice).toFixed(2)}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right text-gray-700">
+                                                                            ${Number(item.discount || 0).toFixed(2)}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                                                            ${((Number(item.unitPrice) * item.quantity) - Number(item.discount || 0)).toFixed(2)}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Totals */}
-                                            <div className="border-t pt-6 space-y-3">
-                                                <div className="flex justify-between text-gray-700">
-                                                    <span>Subtotal (USD):</span>
-                                                    <span className="font-medium">${Number(selectedInvoice.total).toFixed(2)}</span>
-                                                </div>
-                                                <div className="flex justify-between text-gray-700">
-                                                    <span>Exchange Rate:</span>
-                                                    <span className="font-medium">1 USD = ؋{selectedInvoice.exchangeRate || 70}</span>
-                                                </div>
-                                                <div className="flex justify-between text-lg font-bold text-gray-900 pt-3 border-t">
-                                                    <span>Total (AFG):</span>
-                                                    <span>؋{(Number(selectedInvoice.total) * (selectedInvoice.exchangeRate || 70)).toFixed(0)}</span>
-                                                </div>
-                                                <div className="flex justify-between text-gray-700">
-                                                    <span>Paid Amount:</span>
-                                                    <span className="font-medium text-green-600">
-                                                        ؋{(Number(selectedInvoice.paidAmount || 0) * (selectedInvoice.exchangeRate || 70)).toFixed(0)}
-                                                    </span>
-                                                </div>
-                                                {selectedInvoice.status !== 'PAID' && (
+                                                {/* Totals */}
+                                                <div className="border-t pt-6 space-y-3">
                                                     <div className="flex justify-between text-gray-700">
-                                                        <span>Outstanding:</span>
-                                                        <span className="font-medium text-red-600">
-                                                            ؋{((Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)) * (selectedInvoice.exchangeRate || 70)).toFixed(0)}
+                                                        <span>Subtotal (USD):</span>
+                                                        <span className="font-medium">${Number(selectedInvoice.total).toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-gray-700">
+                                                        <span>Exchange Rate:</span>
+                                                        <span className="font-medium">1 USD = ؋{selectedInvoice.exchangeRate || 70}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-lg font-bold text-gray-900 pt-3 border-t">
+                                                        <span>Total (AFG):</span>
+                                                        <span>؋{(Number(selectedInvoice.total) * (selectedInvoice.exchangeRate || 70)).toFixed(0)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-gray-700">
+                                                        <span>Paid Amount:</span>
+                                                        <span className="font-medium text-green-600">
+                                                            ؋{(Number(selectedInvoice.paidAmount || 0) * (selectedInvoice.exchangeRate || 70)).toFixed(0)}
                                                         </span>
+                                                    </div>
+                                                    {selectedInvoice.status !== 'PAID' && (
+                                                        <div className="flex justify-between text-gray-700">
+                                                            <span>Outstanding:</span>
+                                                            <span className="font-medium text-red-600">
+                                                                ؋{((Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)) * (selectedInvoice.exchangeRate || 70)).toFixed(0)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Payment Info */}
+                                                <div className="mt-6 bg-blue-50 rounded-lg p-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <p className="text-sm text-gray-600">Payment Method</p>
+                                                            <p className="font-bold text-gray-900">{selectedInvoice.paymentMethod}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-gray-600">Status</p>
+                                                            <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${selectedInvoice.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                                                                    selectedInvoice.status === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
+                                                                        'bg-gray-100 text-gray-700'
+                                                                }`}>
+                                                                {selectedInvoice.status}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Payments History */}
+                                                {selectedInvoice.payments && selectedInvoice.payments.length > 0 && (
+                                                    <div className="mt-6">
+                                                        <h3 className="font-bold text-gray-900 mb-3">Payment History</h3>
+                                                        <div className="space-y-2">
+                                                            {selectedInvoice.payments.map((payment: any) => (
+                                                                <div key={payment.id} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-600">
+                                                                            {new Date(payment.date).toLocaleString()}
+                                                                        </p>
+                                                                        <p className="text-xs text-gray-500">{payment.method}</p>
+                                                                    </div>
+                                                                    <p className="font-bold text-green-600">
+                                                                        ؋{(Number(payment.amount) * (selectedInvoice.exchangeRate || 70)).toFixed(0)}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 )}
-                                            </div>
 
-                                            {/* Payment Info */}
-                                            <div className="mt-6 bg-blue-50 rounded-lg p-4">
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <p className="text-sm text-gray-600">Payment Method</p>
-                                                        <p className="font-bold text-gray-900">{selectedInvoice.paymentMethod}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-600">Status</p>
-                                                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
-                                                            selectedInvoice.status === 'PAID' ? 'bg-green-100 text-green-700' :
-                                                            selectedInvoice.status === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
-                                                            'bg-gray-100 text-gray-700'
-                                                        }`}>
-                                                            {selectedInvoice.status}
-                                                        </span>
-                                                    </div>
+                                                {/* Close Button */}
+                                                <div className="mt-8 flex justify-end">
+                                                    <button
+                                                        onClick={() => setIsViewModalOpen(false)}
+                                                        className="px-6 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 transition"
+                                                    >
+                                                        Close
+                                                    </button>
                                                 </div>
-                                            </div>
-
-                                            {/* Payments History */}
-                                            {selectedInvoice.payments && selectedInvoice.payments.length > 0 && (
-                                                <div className="mt-6">
-                                                    <h3 className="font-bold text-gray-900 mb-3">Payment History</h3>
-                                                    <div className="space-y-2">
-                                                        {selectedInvoice.payments.map((payment: any) => (
-                                                            <div key={payment.id} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
-                                                                <div>
-                                                                    <p className="text-sm text-gray-600">
-                                                                        {new Date(payment.date).toLocaleString()}
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-500">{payment.method}</p>
-                                                                </div>
-                                                                <p className="font-bold text-green-600">
-                                                                    ؋{(Number(payment.amount) * (selectedInvoice.exchangeRate || 70)).toFixed(0)}
-                                                                </p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Close Button */}
-                                            <div className="mt-8 flex justify-end">
-                                                <button
-                                                    onClick={() => setIsViewModalOpen(false)}
-                                                    className="px-6 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 transition"
-                                                >
-                                                    Close
-                                                </button>
-                                            </div>
-                                        </>
-                                    ) : null}
+                                            </>
+                                        ) : null}
                                     </div>
-                                    
+
                                     <style jsx global>{`
                                         @media print {
                                             @page {

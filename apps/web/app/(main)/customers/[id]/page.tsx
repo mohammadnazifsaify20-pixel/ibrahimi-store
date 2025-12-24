@@ -335,13 +335,13 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                                             </a>
                                         </td>
                                         <td className="px-6 py-4 font-bold text-gray-900">
-                                            ؋{Math.round(Number(inv.totalLocal || inv.total * 70)).toLocaleString()}
+                                            ؋{Math.round(Number(inv.totalLocal || inv.total * (inv.exchangeRate || 70))).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-green-600 font-medium">
-                                            ؋{Math.round(Number(inv.paidAmount) * 70).toLocaleString()}
+                                            ؋{Math.round(Number(inv.paidAmount) * (inv.exchangeRate || 70)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-red-600">
-                                            ؋{Math.round(Number(inv.outstandingAmount) * 70).toLocaleString()}
+                                            ؋{Math.round(Number(inv.outstandingAmount) * (inv.exchangeRate || 70)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
