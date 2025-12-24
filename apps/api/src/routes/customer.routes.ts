@@ -362,7 +362,7 @@ router.delete('/:id', authenticate, authorize([Role.ADMIN]), async (req: AuthReq
         // Check if customer has outstanding balance
         const customer = await prisma.customer.findUnique({
             where: { id: customerId },
-            select: { 
+            select: {
                 outstandingBalance: true,
                 name: true
             }
@@ -373,8 +373,8 @@ router.delete('/:id', authenticate, authorize([Role.ADMIN]), async (req: AuthReq
         }
 
         if (Number(customer.outstandingBalance) > 0) {
-            return res.status(400).json({ 
-                message: `Cannot delete customer "${customer.name}" with outstanding balance. Please clear all debts first.` 
+            return res.status(400).json({
+                message: `Cannot delete customer "${customer.name}" with outstanding balance. Please clear all debts first.`
             });
         }
 
@@ -421,6 +421,23 @@ router.delete('/:id', authenticate, authorize([Role.ADMIN]), async (req: AuthReq
             await tx.invoice.deleteMany({
                 where: { customerId: customerId }
             });
+
+            // 6.5 Delete Customer Deposits & Withdrawals
+            const deposits = await tx.customerDeposit.findMany({
+                where: { customerId: customerId },
+                select: { id: true }
+            });
+            const depositIds = deposits.map(d => d.id);
+
+            if (depositIds.length > 0) {
+                await tx.depositWithdrawal.deleteMany({
+                    where: { depositId: { in: depositIds } }
+                });
+
+                await tx.customerDeposit.deleteMany({
+                    where: { customerId: customerId }
+                });
+            }
 
             // 7. Delete Customer
             await tx.customer.delete({
@@ -493,6 +510,23 @@ router.post('/bulk-delete', authenticate, authorize([Role.ADMIN]), async (req: A
                 await tx.creditEntry.deleteMany({ where: { customerId: id } });
                 await tx.payment.deleteMany({ where: { customerId: id } });
                 await tx.invoice.deleteMany({ where: { customerId: id } });
+
+                // 4.5. Delete Deposits
+                const deposits = await tx.customerDeposit.findMany({
+                    where: { customerId: id },
+                    select: { id: true }
+                });
+                const depositIds = deposits.map(d => d.id);
+
+                if (depositIds.length > 0) {
+                    await tx.depositWithdrawal.deleteMany({
+                        where: { depositId: { in: depositIds } }
+                    });
+
+                    await tx.customerDeposit.deleteMany({
+                        where: { customerId: id }
+                    });
+                }
 
                 // 5. Delete Customer
                 await tx.customer.delete({ where: { id } });
