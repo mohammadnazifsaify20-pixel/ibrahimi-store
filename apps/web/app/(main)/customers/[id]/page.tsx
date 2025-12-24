@@ -48,7 +48,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
             console.error('Failed to fetch credit history', error);
         }
     };
-    
+
     const fetchTransactions = async () => {
         try {
             const res = await api.get(`/sales`, { params: { customerId: params.id } });
@@ -224,7 +224,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                         <span className="block text-sm text-gray-400">Current Debt</span>
                         <div className="flex items-baseline gap-2">
                             <span className={`font-bold text-xl ${displayDebtAFN > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                ؋{Math.floor(displayDebtAFN).toLocaleString()}
+                                ؋{Math.round(displayDebtAFN).toLocaleString()}
                             </span>
                             {customer.outstandingBalanceAFN && <span className="text-xs text-gray-400 bg-gray-100 px-1 rounded">Fixed</span>}
                         </div>
@@ -264,24 +264,23 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 font-bold text-gray-900">
-                                            ؋{Math.floor(Number(credit.originalAmountAFN)).toLocaleString()}
+                                            ؋{Math.round(Number(credit.originalAmountAFN)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-green-600 font-medium">
-                                            ؋{Math.floor(Number(credit.paidAmountAFN || 0)).toLocaleString()}
+                                            ؋{Math.round(Number(credit.paidAmountAFN || 0)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-red-600">
-                                            ؋{Math.floor(Number(credit.remainingBalanceAFN || 0)).toLocaleString()}
+                                            ؋{Math.round(Number(credit.remainingBalanceAFN || 0)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
                                             {new Date(credit.dueDate).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                credit.status === 'SETTLED' ? 'bg-blue-100 text-blue-700' :
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${credit.status === 'SETTLED' ? 'bg-blue-100 text-blue-700' :
                                                 credit.status === 'OVERDUE' ? 'bg-red-100 text-red-700' :
-                                                credit.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700' :
-                                                'bg-green-100 text-green-700'
-                                            }`}>
+                                                    credit.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-green-100 text-green-700'
+                                                }`}>
                                                 {credit.status === 'SETTLED' ? 'PAID' : credit.status.replace('_', ' ')}
                                             </span>
                                         </td>
@@ -336,26 +335,25 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                                             </a>
                                         </td>
                                         <td className="px-6 py-4 font-bold text-gray-900">
-                                            ؋{Math.floor(Number(inv.totalLocal || inv.total * 70)).toLocaleString()}
+                                            ؋{Math.round(Number(inv.totalLocal || inv.total * 70)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-green-600 font-medium">
-                                            ؋{Math.floor(Number(inv.paidAmount) * 70).toLocaleString()}
+                                            ؋{Math.round(Number(inv.paidAmount) * 70).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-red-600">
-                                            ؋{Math.floor(Number(inv.outstandingAmount) * 70).toLocaleString()}
+                                            ؋{Math.round(Number(inv.outstandingAmount) * 70).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
                                                 inv.status === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
-                                                'bg-gray-100 text-gray-700'
-                                            }`}>
+                                                    'bg-gray-100 text-gray-700'
+                                                }`}>
                                                 {inv.status}
                                             </span>
                                         </td>
                                     </tr>
                                 ))}
-                                
+
                                 {/* Debt Transactions */}
                                 {creditHistory.map((credit: any) => (
                                     <tr key={`debt-${credit.id}`} className="hover:bg-gray-50 transition-colors">
@@ -372,21 +370,20 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                                             {credit.invoice?.invoiceNumber}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-gray-900">
-                                            ؋{Math.floor(Number(credit.originalAmountAFN)).toLocaleString()}
+                                            ؋{Math.round(Number(credit.originalAmountAFN)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-green-600 font-medium">
-                                            ؋{Math.floor(Number(credit.paidAmountAFN || 0)).toLocaleString()}
+                                            ؋{Math.round(Number(credit.paidAmountAFN || 0)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-red-600">
-                                            ؋{Math.floor(Number(credit.remainingBalanceAFN || 0)).toLocaleString()}
+                                            ؋{Math.round(Number(credit.remainingBalanceAFN || 0)).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                credit.status === 'SETTLED' ? 'bg-blue-100 text-blue-700' :
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${credit.status === 'SETTLED' ? 'bg-blue-100 text-blue-700' :
                                                 credit.status === 'OVERDUE' ? 'bg-red-100 text-red-700' :
-                                                credit.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700' :
-                                                'bg-green-100 text-green-700'
-                                            }`}>
+                                                    credit.status === 'DUE_SOON' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-green-100 text-green-700'
+                                                }`}>
                                                 {credit.status === 'SETTLED' ? 'PAID' : credit.status.replace('_', ' ')}
                                             </span>
                                         </td>
@@ -416,9 +413,9 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                         </div>
 
                         <div className="flex justify-center bg-gray-100 p-8 rounded-lg">
-                            <img 
-                                src={previewImageData} 
-                                alt="VIP Card Preview" 
+                            <img
+                                src={previewImageData}
+                                alt="VIP Card Preview"
                                 className="max-w-full h-auto shadow-2xl rounded-lg border-4 border-white"
                                 style={{ maxHeight: '400px' }}
                             />
@@ -426,8 +423,8 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
 
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <p className="text-sm text-blue-800">
-                                <strong>✓ Store Contact:</strong> +971 50 123 4567<br/>
-                                <strong>✓ Customer ID:</strong> {customer.displayId || `EQ${String(customer.id).padStart(6, '0')}`}<br/>
+                                <strong>✓ Store Contact:</strong> +971 50 123 4567<br />
+                                <strong>✓ Customer ID:</strong> {customer.displayId || `EQ${String(customer.id).padStart(6, '0')}`}<br />
                                 <strong>✓ Card Size:</strong> Credit card size (85.6mm x 53.98mm)
                             </p>
                         </div>

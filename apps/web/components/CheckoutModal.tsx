@@ -65,7 +65,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
     const [newCustomerName, setNewCustomerName] = useState('');
     const [newCustomerPhone, setNewCustomerPhone] = useState('');
     const [newCustomerEmail, setNewCustomerEmail] = useState('');
-    
+
     // Credit Sale Fields
     const [dueDate, setDueDate] = useState('');
     const [debtNotes, setDebtNotes] = useState('');
@@ -172,18 +172,18 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
             if (returnChange && paidAFG > totalAFGReference) {
                 finalPaidAmountUSD = finalTotalUSD; // Cap at total (Change returned cash)
             }
-            
+
             // Check if this is a credit sale (partial payment)
             const outstanding = finalTotalUSD - finalPaidAmountUSD;
             const isCreditSale = outstanding > 0.01; // Even 1 AFG outstanding requires due date
-            
+
             // Validate due date for ANY credit sales (partial payment or CREDIT method)
             if (isCreditSale && !dueDate) {
                 setError('Due date is required when there is outstanding balance');
                 setLoading(false);
                 return;
             }
-            
+
             // Require customer selection for credit sales
             if (isCreditSale && !customerId) {
                 setError('Please select a customer for credit sales');
@@ -205,7 +205,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                 paymentReference: 'POS Sale',
                 exchangeRate: currentExchangeRate,
             };
-            
+
             // Add due date and notes for credit sales
             if (isCreditSale && dueDate) {
                 saleData.dueDate = new Date(dueDate).toISOString();
@@ -428,7 +428,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                                                     <AlertTriangle size={18} />
                                                     <span className="text-sm font-bold">Outstanding Balance - Due Date Required</span>
                                                 </div>
-                                                
+
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                                         Due Date <span className="text-red-500">*</span>
@@ -442,7 +442,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                                                         required
                                                     />
                                                 </div>
-                                                
+
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                                         Notes (Optional)
@@ -646,7 +646,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                                                         This customer owes <strong>؋{
                                                             selectedCustomer.outstandingBalanceAFN
                                                                 ? Number(selectedCustomer.outstandingBalanceAFN).toLocaleString()
-                                                                : Math.floor(Number(selectedCustomer.outstandingBalance) * Number(exchangeRate)).toLocaleString()
+                                                                : Math.round(Number(selectedCustomer.outstandingBalance) * Number(exchangeRate)).toLocaleString()
                                                         }</strong>.
                                                         Confirming this payment will proceed, but be aware of their credit status.
                                                     </p>
@@ -662,7 +662,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutMo
                                                         {selectedCustomer.name} already owes <strong>؋{
                                                             selectedCustomer.outstandingBalanceAFN
                                                                 ? Number(selectedCustomer.outstandingBalanceAFN).toLocaleString()
-                                                                : Math.floor(Number(selectedCustomer.outstandingBalance) * Number(exchangeRate)).toLocaleString()
+                                                                : Math.round(Number(selectedCustomer.outstandingBalance) * Number(exchangeRate)).toLocaleString()
                                                         }</strong>.
                                                         Are you sure you want to proceed with this new transaction?
                                                     </p>
