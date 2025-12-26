@@ -3,9 +3,9 @@ import { PrismaClient } from '@repo/database';
 import { z, ZodError } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import bcrypt from 'bcryptjs';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Validation Schema
 const createExpenseSchema = z.object({

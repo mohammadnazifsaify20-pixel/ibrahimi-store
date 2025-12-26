@@ -2,9 +2,9 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, Role } from '@repo/database';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.middleware';
 import bcrypt from 'bcryptjs';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Get Exchange Rate
 router.get('/exchange-rate', async (req: Request, res: Response) => {

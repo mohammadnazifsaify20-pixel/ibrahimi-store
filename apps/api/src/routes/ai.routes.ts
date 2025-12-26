@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@repo/database';
 import { authenticate } from '../middleware/auth.middleware';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Simple intent parser
 const parseIntent = (command: string) => {

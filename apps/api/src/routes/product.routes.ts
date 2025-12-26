@@ -9,7 +9,7 @@ import csvParser from 'csv-parser';
 const upload = multer({ storage: multer.memoryStorage() });
 
 const router = Router();
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // Schemas
 const createProductSchema = z.object({

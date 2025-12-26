@@ -1,6 +1,5 @@
 import { PrismaClient } from '@repo/database';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // In-memory flag to prevent overlapping runs if api hangs
 let isUpdating = false;

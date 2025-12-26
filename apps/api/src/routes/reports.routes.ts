@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, Role } from '@repo/database';
+import { Role } from '@repo/database';
 import { authenticate, authorize } from '../middleware/auth.middleware';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Dashboard Summary
 router.get('/dashboard', authenticate, authorize([Role.ADMIN, Role.MANAGER]), async (req: Request, res: Response) => {
@@ -23,9 +23,9 @@ router.get('/dashboard', authenticate, authorize([Role.ADMIN, Role.MANAGER]), as
                 select: { id: true, name: true, sku: true, quantityOnHand: true }
             }),
             prisma.customer.aggregate({
-                _sum: { 
+                _sum: {
                     outstandingBalance: true,
-                    outstandingBalanceAFN: true 
+                    outstandingBalanceAFN: true
                 },
             })
         ]);
@@ -47,7 +47,7 @@ router.get('/dashboard', authenticate, authorize([Role.ADMIN, Role.MANAGER]), as
         });
 
         // Use AFN field if available, otherwise calculate from USD (for backward compatibility)
-        const totalOutstandingAFN = outcomes._sum.outstandingBalanceAFN 
+        const totalOutstandingAFN = outcomes._sum.outstandingBalanceAFN
             ? Math.round(Number(outcomes._sum.outstandingBalanceAFN))
             : Math.round(Number(outcomes._sum.outstandingBalance || 0) * 70);
 

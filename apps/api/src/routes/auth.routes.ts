@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { hashPassword, comparePassword, generateToken } from '../utils/auth.utils';
+import prisma from '../lib/prisma';
 import { PrismaClient, Role } from '@repo/database';
 import { z, ZodError } from 'zod';
-
-const prisma = new PrismaClient();
 
 const router = Router();
 

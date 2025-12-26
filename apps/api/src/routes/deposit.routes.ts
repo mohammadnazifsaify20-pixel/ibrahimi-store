@@ -3,9 +3,9 @@ import { PrismaClient, DepositStatus } from '@repo/database';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Validation schemas
 const createDepositSchema = z.object({
@@ -40,7 +40,7 @@ async function generateDepositNumber(): Promise<string> {
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
     try {
         const { customerId, status } = req.query;
-        
+
         const deposits = await prisma.customerDeposit.findMany({
             where: {
                 ...(customerId ? { customerId: Number(customerId) } : {}),
@@ -73,7 +73,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        
+
         const deposit = await prisma.customerDeposit.findUnique({
             where: { id: Number(id) },
             include: {
@@ -99,30 +99,30 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     try {
         const data = createDepositSchema.parse(req.body);
-        
+
         // Fetch user with password for validation
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-        
+
         const user = await prisma.user.findUnique({
             where: { id: req.user.id },
             select: { id: true, password: true }
         });
-        
+
         if (!user) {
             return res.status(401).json({ message: 'User not found' });
         }
-        
+
         const isPasswordValid = await bcrypt.compare(data.password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid password' });
         }
-        
+
         const result = await prisma.$transaction(async (tx) => {
             // Generate deposit number
             const depositNumber = await generateDepositNumber();
-            
+
             // Create deposit
             const deposit = await tx.customerDeposit.create({
                 data: {
@@ -138,14 +138,14 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
                     customer: true
                 }
             });
-            
+
             // Update shop balance - Add deposit to shop balance
             const balanceSetting = await tx.systemSetting.findUnique({
                 where: { key: 'shop_balance' }
             });
             const currentBalance = balanceSetting ? parseFloat(balanceSetting.value) : 0;
             const newBalance = currentBalance + data.amountAFN;
-            
+
             await tx.systemSetting.upsert({
                 where: { key: 'shop_balance' },
                 update: { value: String(newBalance) },
@@ -155,7 +155,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
                     description: 'Shop Cash Balance (AFN)'
                 }
             });
-            
+
             // Log transaction
             await tx.systemSetting.create({
                 data: {
@@ -170,7 +170,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
                     description: 'Balance Transaction: CUSTOMER_DEPOSIT'
                 }
             });
-            
+
             return deposit;
         });
 
@@ -186,46 +186,46 @@ router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res: Respons
     try {
         const { id } = req.params;
         const data = withdrawSchema.parse(req.body);
-        
+
         // Fetch user with password for validation
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-        
+
         const user = await prisma.user.findUnique({
             where: { id: req.user.id },
             select: { id: true, password: true }
         });
-        
+
         if (!user) {
             return res.status(401).json({ message: 'User not found' });
         }
-        
+
         const isPasswordValid = await bcrypt.compare(data.password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid password' });
         }
-        
+
         const result = await prisma.$transaction(async (tx) => {
             // Get deposit
             const deposit = await tx.customerDeposit.findUnique({
                 where: { id: Number(id) },
                 include: { customer: true }
             });
-            
+
             if (!deposit) {
                 throw new Error('Deposit not found');
             }
-            
+
             if (deposit.status === 'WITHDRAWN') {
                 throw new Error('This deposit has been fully withdrawn');
             }
-            
+
             // Validate withdrawal amount
             if (data.amountAFN > Number(deposit.remainingAmountAFN)) {
                 throw new Error('Withdrawal amount exceeds remaining balance');
             }
-            
+
             // Record withdrawal
             const withdrawal = await tx.depositWithdrawal.create({
                 data: {
@@ -234,13 +234,13 @@ router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res: Respons
                     notes: data.notes
                 }
             });
-            
+
             // Update deposit
             const newWithdrawnAmount = Number(deposit.withdrawnAmountAFN) + data.amountAFN;
             const newRemainingAmount = Number(deposit.remainingAmountAFN) - data.amountAFN;
-            const newStatus = newRemainingAmount === 0 ? 'WITHDRAWN' : 
-                             newRemainingAmount < Number(deposit.originalAmountAFN) ? 'PARTIAL' : 'ACTIVE';
-            
+            const newStatus = newRemainingAmount === 0 ? 'WITHDRAWN' :
+                newRemainingAmount < Number(deposit.originalAmountAFN) ? 'PARTIAL' : 'ACTIVE';
+
             const updatedDeposit = await tx.customerDeposit.update({
                 where: { id: deposit.id },
                 data: {
@@ -253,19 +253,19 @@ router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res: Respons
                     withdrawals: true
                 }
             });
-            
+
             // Update shop balance - Deduct withdrawal from shop balance
             const balanceSetting = await tx.systemSetting.findUnique({
                 where: { key: 'shop_balance' }
             });
             const currentBalance = balanceSetting ? parseFloat(balanceSetting.value) : 0;
             const newBalance = currentBalance - data.amountAFN;
-            
+
             await tx.systemSetting.update({
                 where: { key: 'shop_balance' },
                 data: { value: String(newBalance) }
             });
-            
+
             // Log transaction
             await tx.systemSetting.create({
                 data: {
@@ -280,7 +280,7 @@ router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res: Respons
                     description: 'Balance Transaction: DEPOSIT_WITHDRAWAL'
                 }
             });
-            
+
             return { deposit: updatedDeposit, withdrawal };
         });
 

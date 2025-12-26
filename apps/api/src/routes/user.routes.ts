@@ -1,11 +1,11 @@
 import { Router, Response } from 'express';
-import { PrismaClient, Role } from '@repo/database';
+import { Role } from '@repo/database';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.middleware';
 import { hashPassword } from '../utils/auth.utils';
 import { z } from 'zod';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const createUserSchema = z.object({
     email: z.string().email(),

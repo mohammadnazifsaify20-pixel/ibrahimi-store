@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { PrismaClient, Role } from '@repo/database';
+import { Role } from '@repo/database';
 import { authenticate, authorize } from '../middleware/auth.middleware';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Get all audit logs (Admin only)
 router.get('/', authenticate, authorize([Role.ADMIN]), async (req, res) => {

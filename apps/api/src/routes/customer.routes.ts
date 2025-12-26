@@ -4,9 +4,9 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth.middlew
 import { logAction } from '../services/audit.service';
 import bcrypt from 'bcryptjs';
 import { z, ZodError } from 'zod';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const generateDisplayId = () => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

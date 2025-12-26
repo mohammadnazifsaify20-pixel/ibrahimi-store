@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import prisma from '../lib/prisma';
 import { PrismaClient, Role, InvoiceStatus, PaymentMethod } from '@repo/database';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.middleware';
 import { logAction } from '../services/audit.service';
@@ -6,7 +7,6 @@ import { sendInvoiceEmail } from '../services/email.service';
 import { z, ZodError } from 'zod';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Schemas
 const saleItemSchema = z.object({
@@ -197,7 +197,7 @@ router.post('/sales', authenticate, async (req: AuthRequest, res: Response) => {
             if (outstanding > 0 && finalCustomerId) {
                 // Use provided due date or default to 30 days from now
                 const creditDueDate = dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                
+
                 // Calculate AFN equivalent of the outstanding amount at THIS MOMENT's rate
                 // This "locks" the debt in AFN, preventing exchange rate fluctuations from affecting the owed amount in local currency.
                 const outstandingAFN = Number(outstanding) * Number(exchangeRate);
@@ -617,7 +617,7 @@ router.post('/delete-all', authenticate, authorize([Role.ADMIN]), async (req: Au
 
             // 3. Reset all customer outstanding balances to 0
             await tx.customer.updateMany({
-                data: { 
+                data: {
                     outstandingBalance: 0,
                     outstandingBalanceAFN: 0
                 }
@@ -637,14 +637,14 @@ router.post('/delete-all', authenticate, authorize([Role.ADMIN]), async (req: Au
 
         // Log the nuclear action
         await logAction(
-            req.user?.id || 0, 
-            'DELETE_ALL_SALES', 
-            'Invoice', 
-            'ALL', 
+            req.user?.id || 0,
+            'DELETE_ALL_SALES',
+            'Invoice',
+            'ALL',
             { deletedCount: result.deletedCount }
         );
 
-        res.json({ 
+        res.json({
             message: `Successfully deleted ALL sales history (${result.deletedCount} invoices). Stock restored, customer balances reset.`,
             deletedCount: result.deletedCount
         });

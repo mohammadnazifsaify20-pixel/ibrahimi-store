@@ -43,8 +43,19 @@ app.get("/", (req, res) => {
     res.json({ message: "Hello from API" });
 });
 
-app.listen(port, () => {
+import prisma from './lib/prisma';
+
+app.listen(port, async () => {
     console.log(`API server running on port ${port}`);
+
+    // Eagerly connect to DB to avoid cold start latency
+    try {
+        await prisma.$connect();
+        console.log('Database connected eagerly');
+    } catch (err) {
+        console.error('Failed to connect to database eagerly:', err);
+    }
+
     startExchangeRateScheduler();
 });
 // Trigger restart
