@@ -51,7 +51,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
                 <div className="text-center mb-8">
-                    <img src="/logo.png" alt="Logo" className="h-20 w-auto mx-auto mb-4" />
+                    <img src="/logo.jpg" alt="Logo" className="h-20 w-auto mx-auto mb-4" />
                     <h1 className="text-2xl font-bold text-gray-900">Motor Parts Shop</h1>
                     <p className="text-gray-600">Sign in to your account</p>
                 </div>
