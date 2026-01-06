@@ -39,8 +39,15 @@ app.use('/expenses', expenseRoutes);
 app.use('/', debtRoutes); // Debt management routes
 app.use('/deposits', depositRoutes); // Customer deposit routes
 
-app.get("/", (req, res) => {
-    res.json({ message: "Hello from API" });
+app.get("/", async (req, res) => {
+    try {
+        // Simple query to ensure DB connection is alive
+        await prisma.$queryRaw`SELECT 1`;
+        res.json({ message: "Hello from API (DB Connected)" });
+    } catch (error) {
+        console.error('Health check failed:', error);
+        res.status(500).json({ message: "API Error", error });
+    }
 });
 
 import prisma from './lib/prisma';

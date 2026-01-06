@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../lib/store';
 import api from '../../lib/api';
@@ -13,6 +13,19 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Warmup the backend connection on mount
+    useEffect(() => {
+        const warmup = async () => {
+            try {
+                await api.get('/'); // Simple ping to wake up server/DB
+            } catch (err) {
+                // Ignore errors, this is just a warmup
+                console.log('Warmup ping failed (expected if offline/server down):', err);
+            }
+        };
+        warmup();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
