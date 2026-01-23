@@ -1,0 +1,645 @@
+// State Management
+let cart = [];
+let products = [];
+let customers = [];
+let sales = [];
+let expenses = [];
+let settings = { exchangeRate: 70, taxRate: 0, companyName: 'Ibrahimi Store' };
+let currentUser = null;
+let editingProduct = null;
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', async () => {
+    console.log('App loaded');
+    
+    // Check if logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // Decode JWT to get user info
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUser = payload;
+        document.getElementById('user-email').textContent = payload.email;
+    } catch (e) {
+        console.error('Invalid token', e);
+        logout();
+        return;
+    }
+
+    // Load initial data
+    await loadSettings();
+    await loadDashboard();
+    await loadProducts();
+    await loadCustomers();
+});
+
+// Navigation
+function showPage(pageName) {
+    // Hide all pages
+    document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+    
+    // Remove active class from all nav links
+    document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+    
+    // Show selected page
+    document.getElementById(`page-${pageName}`).style.display = 'block';
+    document.getElementById(`nav-${pageName}`).classList.add('active');
+
+    // Load data for page
+    switch(pageName) {
+        case 'dashboard':
+            loadDashboard();
+            break;
+        case 'pos':
+            loadPOSProducts();
+            break;
+        case 'inventory':
+            loadInventory();
+            break;
+        case 'sales':
+            loadSales();
+            break;
+        case 'customers':
+            loadCustomersTable();
+            break;
+        case 'expenses':
+            loadExpenses();
+            break;
+        case 'reports':
+            setDefaultDateRange();
+            break;
+        case 'settings':
+            loadSettingsForm();
+            break;
+    }
+}
+
+// Dashboard
+async function loadDashboard() {
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.reports.dashboard(token);
+    
+    if (result.success) {
+        const data = result.data;
+        document.getElementById('stat-today-sales').textContent = '؋' + (data.todaySales || 0).toFixed(0);
+        document.getElementById('stat-month-sales').textContent = '؋' + (data.monthSales || 0).toFixed(0);
+        document.getElementById('stat-products').textContent = data.totalProducts || 0;
+        document.getElementById('stat-outstanding').textContent = '؋' + (data.outstandingBalance || 0).toFixed(0);
+
+        // Show recent sales
+        if (data.recentSales && data.recentSales.length > 0) {
+            const html = data.recentSales.map(sale => `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <div class="font-semibold">Invoice #${sale.invoice_number}</div>
+                        <div class="text-sm text-gray-600">${new Date(sale.date).toLocaleDateString()}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-blue-600">؋${sale.total_amount.toFixed(0)}</div>
+                        <div class="text-sm ${sale.status === 'paid' ? 'text-green-600' : 'text-orange-600'}">${sale.status}</div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('recent-sales-list').innerHTML = html;
+        }
+    }
+}
+
+// Products
+async function loadProducts() {
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.products.list(token);
+    
+    if (result.success) {
+        products = result.data;
+    }
+}
+
+async function loadPOSProducts() {
+    await loadProducts();
+    renderPOSProducts();
+
+    // Search listener
+    document.getElementById('pos-search').oninput = (e) => {
+        renderPOSProducts(e.target.value);
+    };
+}
+
+function renderPOSProducts(search = '') {
+    const filtered = products.filter(p => {
+        const query = search.toLowerCase();
+        return p.name.toLowerCase().includes(query) || 
+               p.sku.toLowerCase().includes(query) ||
+               p.brand.toLowerCase().includes(query);
+    });
+
+    const html = filtered.map(p => {
+        const price = p.salePriceAFN || (p.salePrice * settings.exchangeRate);
+        const stockClass = p.quantityOnHand > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+        
+        return `
+            <div onclick="addToCart(${p.id})" class="bg-white p-4 rounded-lg border hover:border-blue-500 hover:shadow-md cursor-pointer transition ${p.quantityOnHand <= 0 ? 'opacity-50 cursor-not-allowed' : ''}">
+                <div class="font-bold truncate">${p.name}</div>
+                <div class="text-xs text-gray-500 mb-2">${p.sku}</div>
+                <div class="flex justify-between items-end">
+                    <span class="text-lg font-bold text-blue-600">؋${price.toFixed(0)}</span>
+                    <span class="text-xs px-2 py-1 rounded-full ${stockClass}">${p.quantityOnHand}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    document.getElementById('pos-products-grid').innerHTML = html || '<p class="col-span-3 text-center text-gray-500">No products found</p>';
+}
+
+// Cart Management
+function addToCart(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product || product.quantityOnHand <= 0) return;
+
+    const existing = cart.find(item => item.id === productId);
+    if (existing) {
+        existing.quantity++;
+    } else {
+        cart.push({ ...product, quantity: 1 });
+    }
+    
+    renderCart();
+}
+
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    renderCart();
+}
+
+function updateCartQuantity(productId, quantity) {
+    const item = cart.find(item => item.id === productId);
+    if (item) {
+        item.quantity = Math.max(1, quantity);
+        renderCart();
+    }
+}
+
+function clearCart() {
+    if (confirm('Clear all items from cart?')) {
+        cart = [];
+        renderCart();
+    }
+}
+
+function renderCart() {
+    if (cart.length === 0) {
+        document.getElementById('cart-items').innerHTML = '<p class="text-center text-gray-500">Cart is empty</p>';
+        document.getElementById('cart-total').textContent = '؋0';
+        return;
+    }
+
+    const html = cart.map(item => {
+        const price = item.salePriceAFN || (item.salePrice * settings.exchangeRate);
+        const total = price * item.quantity;
+        
+        return `
+            <div class="cart-item bg-gray-50 p-3 rounded-lg">
+                <div class="flex justify-between mb-2">
+                    <span class="font-semibold">${item.name}</span>
+                    <span class="font-bold">؋${total.toFixed(0)}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">؋${price.toFixed(0)} x ${item.quantity}</span>
+                    <div class="flex gap-2 items-center">
+                        <button onclick="updateCartQuantity(${item.id}, ${item.quantity - 1})" class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">-</button>
+                        <span class="font-bold">${item.quantity}</span>
+                        <button onclick="updateCartQuantity(${item.id}, ${item.quantity + 1})" class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">+</button>
+                        <button onclick="removeFromCart(${item.id})" class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">×</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const total = cart.reduce((sum, item) => {
+        const price = item.salePriceAFN || (item.salePrice * settings.exchangeRate);
+        return sum + (price * item.quantity);
+    }, 0);
+
+    document.getElementById('cart-items').innerHTML = html;
+    document.getElementById('cart-total').textContent = '؋' + total.toFixed(0);
+}
+
+// Checkout
+async function openCheckoutModal() {
+    if (cart.length === 0) {
+        alert('Cart is empty');
+        return;
+    }
+
+    // Load customers for dropdown
+    await loadCustomers();
+    const customerOptions = customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    document.getElementById('checkout-customer').innerHTML = `<option value="">Walk-in Customer</option>${customerOptions}`;
+
+    const total = cart.reduce((sum, item) => {
+        const price = item.salePriceAFN || (item.salePrice * settings.exchangeRate);
+        return sum + (price * item.quantity);
+    }, 0);
+
+    document.getElementById('checkout-total').textContent = '؋' + total.toFixed(0);
+    document.getElementById('checkout-amount').value = total.toFixed(2);
+    
+    openModal('modal-checkout');
+}
+
+async function processCheckout(e) {
+    e.preventDefault();
+    
+    const customerId = document.getElementById('checkout-customer').value || null;
+    const paymentMethod = document.getElementById('checkout-payment-method').value;
+    const amountPaid = parseFloat(document.getElementById('checkout-amount').value);
+
+    const items = cart.map(item => ({
+        productId: item.id,
+        quantity: item.quantity,
+        price: item.salePriceAFN || (item.salePrice * settings.exchangeRate),
+        costPrice: item.costPrice * settings.exchangeRate
+    }));
+
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.sales.create(token, {
+        customerId,
+        items,
+        paymentMethod,
+        amountPaid
+    });
+
+    if (result.success) {
+        alert('Sale completed successfully! Invoice #' + result.data.invoiceNumber);
+        cart = [];
+        renderCart();
+        closeModal('modal-checkout');
+        
+        // Reload products to update stock
+        await loadProducts();
+        renderPOSProducts();
+    } else {
+        alert('Failed to complete sale: ' + (result.error || 'Unknown error'));
+    }
+}
+
+// Inventory
+async function loadInventory() {
+    await loadProducts();
+    
+    const html = products.map(p => `
+        <tr>
+            <td>${p.sku}</td>
+            <td>${p.name}</td>
+            <td>${p.brand}</td>
+            <td>${p.category}</td>
+            <td>$${p.costPrice.toFixed(2)}</td>
+            <td>$${p.salePrice.toFixed(2)}</td>
+            <td><span class="badge ${p.quantityOnHand > 10 ? 'badge-success' : p.quantityOnHand > 0 ? 'badge-warning' : 'badge-danger'}">${p.quantityOnHand}</span></td>
+            <td>
+                <button onclick="editProduct(${p.id})" class="btn btn-primary btn-sm">Edit</button>
+                <button onclick="deleteProduct(${p.id})" class="btn btn-danger btn-sm">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+
+    document.getElementById('inventory-tbody').innerHTML = html || '<tr><td colspan="8" class="text-center text-gray-500">No products found</td></tr>';
+
+    // Search
+    document.getElementById('inventory-search').oninput = (e) => {
+        const query = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#inventory-tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    };
+}
+
+function openAddProductModal() {
+    editingProduct = null;
+    document.getElementById('product-sku').value = '';
+    document.getElementById('product-name').value = '';
+    document.getElementById('product-brand').value = '';
+    document.getElementById('product-category').value = '';
+    document.getElementById('product-cost-price').value = '';
+    document.getElementById('product-sale-price').value = '';
+    document.getElementById('product-quantity').value = '';
+    document.getElementById('product-location').value = '';
+    openModal('modal-add-product');
+}
+
+function editProduct(id) {
+    editingProduct = products.find(p => p.id === id);
+    if (!editingProduct) return;
+    
+    document.getElementById('product-sku').value = editingProduct.sku;
+    document.getElementById('product-name').value = editingProduct.name;
+    document.getElementById('product-brand').value = editingProduct.brand;
+    document.getElementById('product-category').value = editingProduct.category;
+    document.getElementById('product-cost-price').value = editingProduct.costPrice;
+    document.getElementById('product-sale-price').value = editingProduct.salePrice;
+    document.getElementById('product-quantity').value = editingProduct.quantityOnHand;
+    document.getElementById('product-location').value = editingProduct.location;
+    
+    openModal('modal-add-product');
+}
+
+async function saveProduct(e) {
+    e.preventDefault();
+    
+    const product = {
+        sku: document.getElementById('product-sku').value,
+        name: document.getElementById('product-name').value,
+        brand: document.getElementById('product-brand').value,
+        category: document.getElementById('product-category').value,
+        costPrice: parseFloat(document.getElementById('product-cost-price').value),
+        salePrice: parseFloat(document.getElementById('product-sale-price').value),
+        quantityOnHand: parseInt(document.getElementById('product-quantity').value),
+        location: document.getElementById('product-location').value
+    };
+
+    const token = localStorage.getItem('token');
+    let result;
+    
+    if (editingProduct) {
+        result = await window.electronAPI.products.update(token, editingProduct.id, product);
+    } else {
+        result = await window.electronAPI.products.create(token, product);
+    }
+
+    if (result.success) {
+        alert(editingProduct ? 'Product updated!' : 'Product added!');
+        closeModal('modal-add-product');
+        await loadInventory();
+    } else {
+        alert('Failed to save product: ' + (result.error || 'Unknown error'));
+    }
+}
+
+async function deleteProduct(id) {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.products.delete(token, id);
+    
+    if (result.success) {
+        alert('Product deleted!');
+        await loadInventory();
+    } else {
+        alert('Failed to delete product');
+    }
+}
+
+// Sales
+async function loadSales() {
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.sales.list(token);
+    
+    if (result.success) {
+        sales = result.data;
+        
+        const html = sales.map(s => {
+            const statusClass = s.status === 'paid' ? 'badge-success' : s.status === 'partial' ? 'badge-warning' : 'badge-danger';
+            return `
+                <tr>
+                    <td>${s.invoice_number}</td>
+                    <td>${new Date(s.date).toLocaleDateString()}</td>
+                    <td>${s.customer_name || 'Walk-in'}</td>
+                    <td>؋${s.total_amount.toFixed(0)}</td>
+                    <td>؋${s.amount_paid.toFixed(0)}</td>
+                    <td><span class="badge ${statusClass}">${s.status}</span></td>
+                    <td>
+                        <button onclick="viewSale(${s.id})" class="btn btn-primary btn-sm">View</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        document.getElementById('sales-tbody').innerHTML = html || '<tr><td colspan="7" class="text-center text-gray-500">No sales found</td></tr>';
+    }
+}
+
+async function viewSale(id) {
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.sales.getById(token, id);
+    
+    if (result.success) {
+        const sale = result.data;
+        alert(`Invoice #${sale.invoice_number}\nDate: ${new Date(sale.date).toLocaleDateString()}\nTotal: ؋${sale.total_amount.toFixed(0)}\nPaid: ؋${sale.amount_paid.toFixed(0)}\nStatus: ${sale.status}`);
+    }
+}
+
+// Customers
+async function loadCustomers() {
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.customers.list(token);
+    
+    if (result.success) {
+        customers = result.data;
+    }
+}
+
+async function loadCustomersTable() {
+    await loadCustomers();
+    
+    const html = customers.map(c => `
+        <tr>
+            <td>${c.name}</td>
+            <td>${c.phone}</td>
+            <td>${c.email || '-'}</td>
+            <td>؋${(c.outstanding_balance || 0).toFixed(0)}</td>
+            <td>
+                <button onclick="editCustomer(${c.id})" class="btn btn-primary btn-sm">Edit</button>
+            </td>
+        </tr>
+    `).join('');
+
+    document.getElementById('customers-tbody').innerHTML = html || '<tr><td colspan="5" class="text-center text-gray-500">No customers found</td></tr>';
+}
+
+function openAddCustomerModal() {
+    document.getElementById('customer-name').value = '';
+    document.getElementById('customer-phone').value = '';
+    document.getElementById('customer-email').value = '';
+    document.getElementById('customer-address').value = '';
+    openModal('modal-add-customer');
+}
+
+async function saveCustomer(e) {
+    e.preventDefault();
+    
+    const customer = {
+        name: document.getElementById('customer-name').value,
+        phone: document.getElementById('customer-phone').value,
+        email: document.getElementById('customer-email').value || null,
+        address: document.getElementById('customer-address').value || null
+    };
+
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.customers.create(token, customer);
+
+    if (result.success) {
+        alert('Customer added!');
+        closeModal('modal-add-customer');
+        await loadCustomersTable();
+    } else {
+        alert('Failed to save customer: ' + (result.error || 'Unknown error'));
+    }
+}
+
+// Expenses
+async function loadExpenses() {
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.expenses.list(token);
+    
+    if (result.success) {
+        expenses = result.data;
+        
+        const html = expenses.map(e => `
+            <tr>
+                <td>${new Date(e.date).toLocaleDateString()}</td>
+                <td>${e.category}</td>
+                <td>${e.description}</td>
+                <td>؋${e.amount.toFixed(0)}</td>
+                <td>
+                    <button onclick="deleteExpense(${e.id})" class="btn btn-danger btn-sm">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+
+        document.getElementById('expenses-tbody').innerHTML = html || '<tr><td colspan="5" class="text-center text-gray-500">No expenses found</td></tr>';
+    }
+}
+
+function openAddExpenseModal() {
+    openModal('modal-add-expense');
+}
+
+async function saveExpense(e) {
+    e.preventDefault();
+    
+    const expense = {
+        category: document.getElementById('expense-category').value,
+        description: document.getElementById('expense-description').value,
+        amount: parseFloat(document.getElementById('expense-amount').value)
+    };
+
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.expenses.create(token, expense);
+
+    if (result.success) {
+        alert('Expense added!');
+        closeModal('modal-add-expense');
+        document.getElementById('expense-category').value = 'rent';
+        document.getElementById('expense-description').value = '';
+        document.getElementById('expense-amount').value = '';
+        await loadExpenses();
+    } else {
+        alert('Failed to save expense: ' + (result.error || 'Unknown error'));
+    }
+}
+
+async function deleteExpense(id) {
+    const password = prompt('Enter admin password to delete:');
+    if (!password) return;
+    
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.expenses.delete(token, id, password);
+    
+    if (result.success) {
+        alert('Expense deleted!');
+        await loadExpenses();
+    } else {
+        alert('Failed to delete: ' + (result.error || 'Wrong password'));
+    }
+}
+
+// Reports
+function setDefaultDateRange() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    document.getElementById('report-start-date').valueAsDate = firstDay;
+    document.getElementById('report-end-date').valueAsDate = today;
+}
+
+async function generateReport() {
+    const startDate = document.getElementById('report-start-date').value;
+    const endDate = document.getElementById('report-end-date').value;
+    
+    if (!startDate || !endDate) {
+        alert('Please select date range');
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.reports.sales(token, startDate, endDate);
+    
+    if (result.success) {
+        const data = result.data;
+        document.getElementById('report-total-sales').textContent = '؋' + (data.totalSales || 0).toFixed(0);
+        document.getElementById('report-total-profit').textContent = '؋' + (data.totalProfit || 0).toFixed(0);
+        document.getElementById('report-invoice-count').textContent = data.invoiceCount || 0;
+        document.getElementById('report-results').style.display = 'block';
+    }
+}
+
+// Settings
+async function loadSettings() {
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.settings.get(token);
+    
+    if (result.success) {
+        settings = result.data;
+    }
+}
+
+function loadSettingsForm() {
+    document.getElementById('settings-exchange-rate').value = settings.exchangeRate;
+    document.getElementById('settings-tax-rate').value = settings.taxRate;
+    document.getElementById('settings-company-name').value = settings.companyName;
+}
+
+async function saveSettings(e) {
+    e.preventDefault();
+    
+    const newSettings = {
+        exchangeRate: parseFloat(document.getElementById('settings-exchange-rate').value),
+        taxRate: parseFloat(document.getElementById('settings-tax-rate').value),
+        companyName: document.getElementById('settings-company-name').value,
+        adminPassword: document.getElementById('settings-admin-password').value || undefined
+    };
+
+    const token = localStorage.getItem('token');
+    const result = await window.electronAPI.settings.update(token, newSettings);
+
+    if (result.success) {
+        alert('Settings saved!');
+        await loadSettings();
+        document.getElementById('settings-admin-password').value = '';
+    } else {
+        alert('Failed to save settings');
+    }
+}
+
+// Modal helpers
+function openModal(modalId) {
+    document.getElementById(modalId).classList.add('active');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+// Logout
+function logout() {
+    localStorage.removeItem('token');
+    window.location.href = 'index.html';
+}
