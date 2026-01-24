@@ -5,6 +5,7 @@ import api from '../../../lib/api';
 import { Trash2, Search, Lock, AlertTriangle, Eye, X } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import { getEmailConfig, generateInvoicePDF, sendInvoiceEmail } from '../../../lib/emailUtils';
 
 export default function SalesPage() {
     const [sales, setSales] = useState<any[]>([]);
@@ -22,6 +23,11 @@ export default function SalesPage() {
     const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [invoiceLoading, setInvoiceLoading] = useState(false);
+
+    // Batch Email State
+    const [emailProcessing, setEmailProcessing] = useState(false);
+    const [emailProgress, setEmailProgress] = useState('');
+    const [selectedInvoiceForEmail, setSelectedInvoiceForEmail] = useState<any>(null);
 
     useEffect(() => {
         fetchSales();
@@ -158,6 +164,63 @@ export default function SalesPage() {
         }
     };
 
+    const handleBatchEmail = async () => {
+        if (selectedIds.size === 0) return;
+
+        // Load config
+        const config = await getEmailConfig();
+        if (!config || !config.serviceId) {
+            alert('Email settings not configured. Please go to Settings > Email Config.');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to email receipts for ${selectedIds.size} invoices?`)) return;
+
+        setEmailProcessing(true);
+        let successCount = 0;
+        let failCount = 0;
+
+        const ids = Array.from(selectedIds);
+
+        for (let i = 0; i < ids.length; i++) {
+            const id = ids[i];
+            setEmailProgress(`Processing ${i + 1}/${ids.length}...`);
+
+            try {
+                // Fetch full invoice details
+                const res = await api.get(`/sales/${id}`);
+                const invoice = res.data;
+
+                // Set to state for rendering
+                setSelectedInvoiceForEmail(invoice);
+
+                // Wait for render
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Generate PDF
+                const pdfBlob = await generateInvoicePDF('email-invoice-content', invoice.invoiceNumber);
+
+                if (pdfBlob) {
+                    await sendInvoiceEmail(invoice, pdfBlob, config);
+                    successCount++;
+                } else {
+                    console.error('Failed to generate PDF for', invoice.invoiceNumber);
+                    failCount++;
+                }
+
+            } catch (error) {
+                console.error(`Failed to email invoice ${id}`, error);
+                failCount++;
+            }
+        }
+
+        setEmailProcessing(false);
+        setEmailProgress('');
+        setSelectedInvoiceForEmail(null);
+        alert(`Batch Email Completed.\nSent: ${successCount}\nFailed: ${failCount}`);
+        setSelectedIds(new Set());
+    };
+
     const filteredSales = sales.filter(s =>
         s.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
         s.customer?.name.toLowerCase().includes(search.toLowerCase())
@@ -180,12 +243,30 @@ export default function SalesPage() {
                         </button>
                     )}
                     {selectedIds.size > 0 && (
-                        <button
-                            onClick={handleBulkDeleteClick}
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-bold shadow-sm"
-                        >
-                            Delete Selected ({selectedIds.size})
-                        </button>
+                        <>
+                            <button
+                                onClick={handleBatchEmail}
+                                disabled={emailProcessing}
+                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-bold shadow-sm flex items-center gap-2"
+                            >
+                                {emailProcessing ? (
+                                    <>
+                                        <span className="animate-spin">⏳</span>
+                                        {emailProgress}
+                                    </>
+                                ) : (
+                                    <>
+                                        📧 Email Selected ({selectedIds.size})
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                onClick={handleBulkDeleteClick}
+                                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-bold shadow-sm"
+                            >
+                                Delete Selected ({selectedIds.size})
+                            </button>
+                        </>
                     )}
                     <div className="relative w-64">
                         {/* @ts-ignore */}
@@ -554,8 +635,8 @@ export default function SalesPage() {
                                                         <div>
                                                             <p className="text-sm text-gray-600">Status</p>
                                                             <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${selectedInvoice.status === 'PAID' ? 'bg-green-100 text-green-700' :
-                                                                    selectedInvoice.status === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
-                                                                        'bg-gray-100 text-gray-700'
+                                                                selectedInvoice.status === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
+                                                                    'bg-gray-100 text-gray-700'
                                                                 }`}>
                                                                 {selectedInvoice.status}
                                                             </span>
@@ -772,6 +853,111 @@ export default function SalesPage() {
                     </div>
                 </Dialog>
             </Transition>
+            {/* Hidden Invoice Template for PDF Generation */}
+            <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '210mm', minHeight: '297mm', background: 'white' }} id="hidden-invoice-template">
+                {selectedInvoiceForEmail && (
+                    <div className="p-8 bg-white" id="email-invoice-content" style={{ width: '100%', height: '100%' }}>
+                        {/* Company Header with Logo */}
+                        <div className="border-b-2 pb-4 mb-6">
+                            <div className="flex items-center gap-4">
+                                <img
+                                    src="/logo.png"
+                                    alt="Company Logo"
+                                    className="h-20 w-auto"
+                                    style={{ display: 'block', maxHeight: '80px', width: 'auto' }}
+                                />
+                                <div>
+                                    <h1 className="text-xl font-bold text-gray-900">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h1>
+                                    <p className="text-sm text-gray-600 mt-1">Motor Parts & Accessories</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Invoice Header */}
+                        <div className="flex justify-between items-start mb-6">
+                            <div className="flex-1">
+                                <h2 className="text-3xl font-bold text-gray-900">
+                                    Invoice {selectedInvoiceForEmail.invoiceNumber}
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Date: {new Date(selectedInvoiceForEmail.date).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Customer Info */}
+                        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                            <h3 className="font-bold text-gray-900 mb-2">Customer Information</h3>
+                            <p className="text-gray-700">
+                                <span className="font-medium">Name:</span> {selectedInvoiceForEmail.customer?.name || 'Walk-in Customer'}
+                            </p>
+                            {selectedInvoiceForEmail.customer?.email && (
+                                <p className="text-gray-700">
+                                    <span className="font-medium">Email:</span> {selectedInvoiceForEmail.customer.email}
+                                </p>
+                            )}
+                            {selectedInvoiceForEmail.customer?.phone && (
+                                <p className="text-gray-700">
+                                    <span className="font-medium">Phone:</span> {selectedInvoiceForEmail.customer.phone}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Items Table */}
+                        <div className="mb-6">
+                            <h3 className="font-bold text-gray-900 mb-3">Invoice Items</h3>
+                            <div className="overflow-x-auto border rounded-lg">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 border-b">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600">Product</th>
+                                            <th className="px-4 py-3 text-right font-medium text-gray-600">Quantity</th>
+                                            <th className="px-4 py-3 text-right font-medium text-gray-600">Unit Price</th>
+                                            <th className="px-4 py-3 text-right font-medium text-gray-600">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {selectedInvoiceForEmail.items?.map((item: any) => (
+                                            <tr key={item.id} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3 text-gray-900">
+                                                    {item.product?.name || 'Product'}
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-gray-700">
+                                                    {item.quantity}
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-gray-700">
+                                                    ${Number(item.unitPrice).toFixed(2)}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                                    ${((Number(item.unitPrice) * item.quantity) - Number(item.discount || 0)).toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Totals */}
+                        <div className="border-t pt-6 space-y-3">
+                            <div className="flex justify-between text-gray-700">
+                                <span>Subtotal (USD):</span>
+                                <span className="font-medium">${Number(selectedInvoiceForEmail.total).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-lg font-bold text-gray-900 pt-3 border-t">
+                                <span>Total (AFG):</span>
+                                <span>؋{(Number(selectedInvoiceForEmail.total) * (selectedInvoiceForEmail.exchangeRate || 70)).toFixed(0)}</span>
+                            </div>
+                            <div className="flex justify-between text-gray-700">
+                                <span>Paid Amount:</span>
+                                <span className="font-medium text-green-600">
+                                    ؋{(Number(selectedInvoiceForEmail.paidAmount || 0) * (selectedInvoiceForEmail.exchangeRate || 70)).toFixed(0)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

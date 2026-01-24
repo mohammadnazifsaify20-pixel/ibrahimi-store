@@ -7,7 +7,12 @@ import { Lock, User, Plus, Trash2, Key, Database, Download } from 'lucide-react'
 
 export default function SettingsPage() {
     const { user } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'profile' | 'users' | 'system'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'users' | 'system' | 'email'>('profile');
+
+    // Email Config State
+    const [emailConfig, setEmailConfig] = useState({ serviceId: '', templateId: '', publicKey: '' });
+    const [emailLoading, setEmailLoading] = useState(false);
+    const [emailMessage, setEmailMessage] = useState('');
 
     // Profile State
     const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -27,7 +32,33 @@ export default function SettingsPage() {
         if (activeTab === 'users' && user?.role === 'ADMIN') {
             fetchUsers();
         }
+        if (activeTab === 'email' && user?.role === 'ADMIN') {
+            fetchEmailConfig();
+        }
     }, [activeTab, user]);
+
+    const fetchEmailConfig = async () => {
+        try {
+            const res = await api.get('/settings/email-config');
+            if (res.data) setEmailConfig(res.data);
+        } catch (error) {
+            console.error('Failed to fetch email config', error);
+        }
+    };
+
+    const handleSaveEmailConfig = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setEmailLoading(true);
+        setEmailMessage('');
+        try {
+            await api.post('/settings/email-config', emailConfig);
+            setEmailMessage('Email configuration saved successfully');
+        } catch (error: any) {
+            setEmailMessage(error.response?.data?.message || 'Failed to save email config');
+        } finally {
+            setEmailLoading(false);
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -206,240 +237,310 @@ export default function SettingsPage() {
                             System & Backup
                             {activeTab === 'system' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
                         </button>
-                    </>
-                )}
-            </div>
-
-            {/* Profile Tab */}
-            {activeTab === 'profile' && (
-                <div className="grid gap-6 md:grid-cols-2">
-                    {/* General Info */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border h-fit">
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                            {/* @ts-ignore */}
-                            <User size={20} />
-                            Profile Details
-                        </h2>
-                        <form onSubmit={handleUpdateProfile} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                <input
-                                    type="text"
-                                    value={profileData.name}
-                                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                <input
-                                    type="email"
-                                    value={profileData.email}
-                                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    required
-                                />
-                            </div>
-                            {profileMessage && (
-                                <div className={`p-3 rounded text-sm ${profileMessage.includes('success') ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
-                                    {profileMessage}
-                                </div>
-                            )}
-                            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">
-                                Update Information
-                            </button>
-                        </form>
-                    </div>
-
-                    {/* Password Change */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border h-fit">
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                            {/* @ts-ignore */}
-                            <Lock size={20} />
-                            Change Password
-                        </h2>
-                        <form onSubmit={handleChangePassword} className="space-y-4">
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                                <input
-                                    type="password"
-                                    value={passwordData.newPassword}
-                                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    required
-                                    minLength={6}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                                <input
-                                    type="password"
-                                    value={passwordData.confirmPassword}
-                                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    required
-                                />
-                            </div>
-                            {passwordMessage && (
-                                <div className={`p-3 rounded text-sm ${passwordMessage.includes('success') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                    {passwordMessage}
-                                </div>
-                            )}
-                            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">
-                                Update Password
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* User Management Tab */}
-            {activeTab === 'users' && user?.role === 'ADMIN' && (
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold">All Users</h2>
                         <button
-                            onClick={() => setIsAddUserModalOpen(true)}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition font-medium"
+                            onClick={() => setActiveTab('email')}
+                            className={`px-6 py-3 font-medium text-sm transition-colors relative ${activeTab === 'email' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                         >
                             {/* @ts-ignore */}
-                            <Plus size={18} />
-                            Add User
+                            <span className="inline-block mr-2" >📧</span>
+                            Email Config
+                            {activeTab === 'email' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
                         </button>
                     </div>
 
-                    {userMessage && <div className="bg-blue-50 text-blue-700 p-3 rounded">{userMessage}</div>}
-
-                    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 text-gray-600 font-medium border-b">
-                                <tr>
-                                    <th className="px-6 py-4">Name</th>
-                                    <th className="px-6 py-4">Email</th>
-                                    <th className="px-6 py-4">Role</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {users.map((u) => (
-                                    <tr key={u.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-medium text-gray-900">{u.name}</td>
-                                        <td className="px-6 py-4 text-gray-600">{u.email}</td>
-                                        <td className="px-6 py-4">
-                                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold uppercase">{u.role}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right flex justify-end gap-3">
-                                            <button
-                                                onClick={() => handleResetUserPassword(u.id)}
-                                                className="text-blue-600 hover:underline"
-                                            >
-                                                Reset Pass
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteUser(u.id)}
-                                                className="text-red-500 hover:text-red-700"
-                                                disabled={u.id === user.id}
-                                                title={u.id === user.id ? "Cannot delete yourself" : "Delete User"}
-                                            >
-                                                {/* @ts-ignore */}
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Add User Modal */}
-                    {isAddUserModalOpen && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                            <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
-                                <h3 className="text-xl font-bold mb-4">Add New User</h3>
-                                <form onSubmit={handleAddUser} className="space-y-4">
+                {/* Profile Tab */}
+                {activeTab === 'profile' && (
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {/* General Info */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border h-fit">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                {/* @ts-ignore */}
+                                <User size={20} />
+                                Profile Details
+                            </h2>
+                            <form onSubmit={handleUpdateProfile} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                                     <input
                                         type="text"
-                                        placeholder="Full Name"
-                                        value={newUser.name}
-                                        onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                                        className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={profileData.name}
+                                        onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                         required
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                                     <input
                                         type="email"
-                                        placeholder="Email Address"
-                                        value={newUser.email}
-                                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                                        className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={profileData.email}
+                                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                         required
                                     />
+                                </div>
+                                {profileMessage && (
+                                    <div className={`p-3 rounded text-sm ${profileMessage.includes('success') ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
+                                        {profileMessage}
+                                    </div>
+                                )}
+                                <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">
+                                    Update Information
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Password Change */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border h-fit">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                {/* @ts-ignore */}
+                                <Lock size={20} />
+                                Change Password
+                            </h2>
+                            <form onSubmit={handleChangePassword} className="space-y-4">
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                                     <input
                                         type="password"
-                                        placeholder="Initial Password"
-                                        value={newUser.password}
-                                        onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                                        className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={passwordData.newPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                         required
                                         minLength={6}
                                     />
-                                    <select
-                                        value={newUser.role}
-                                        onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                                        className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                    >
-                                        <option value="CASHIER">CASHIER</option>
-                                        <option value="MANAGER">MANAGER</option>
-                                        <option value="ADMIN">ADMIN</option>
-                                        <option value="WAREHOUSE">WAREHOUSE</option>
-                                        <option value="ACCOUNTANT">ACCOUNTANT</option>
-                                    </select>
-
-                                    <div className="flex gap-3 pt-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsAddUserModalOpen(false)}
-                                            className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-200"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={loading}
-                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50"
-                                        >
-                                            {loading ? 'Creating...' : 'Create User'}
-                                        </button>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        value={passwordData.confirmPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        required
+                                    />
+                                </div>
+                                {passwordMessage && (
+                                    <div className={`p-3 rounded text-sm ${passwordMessage.includes('success') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                        {passwordMessage}
                                     </div>
-                                </form>
-                            </div>
+                                )}
+                                <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">
+                                    Update Password
+                                </button>
+                            </form>
                         </div>
-                    )}
+                    </div>
+                )}
+
+                {/* User Management Tab */}
+                {activeTab === 'users' && user?.role === 'ADMIN' && (
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-lg font-bold">All Users</h2>
+                            <button
+                                onClick={() => setIsAddUserModalOpen(true)}
+                                className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition font-medium"
+                            >
+                                {/* @ts-ignore */}
+                                <Plus size={18} />
+                                Add User
+                            </button>
+                        </div>
+
+                        {userMessage && <div className="bg-blue-50 text-blue-700 p-3 rounded">{userMessage}</div>}
+
+                        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-gray-50 text-gray-600 font-medium border-b">
+                                    <tr>
+                                        <th className="px-6 py-4">Name</th>
+                                        <th className="px-6 py-4">Email</th>
+                                        <th className="px-6 py-4">Role</th>
+                                        <th className="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {users.map((u) => (
+                                        <tr key={u.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 font-medium text-gray-900">{u.name}</td>
+                                            <td className="px-6 py-4 text-gray-600">{u.email}</td>
+                                            <td className="px-6 py-4">
+                                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold uppercase">{u.role}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right flex justify-end gap-3">
+                                                <button
+                                                    onClick={() => handleResetUserPassword(u.id)}
+                                                    className="text-blue-600 hover:underline"
+                                                >
+                                                    Reset Pass
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteUser(u.id)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                    disabled={u.id === user.id}
+                                                    title={u.id === user.id ? "Cannot delete yourself" : "Delete User"}
+                                                >
+                                                    {/* @ts-ignore */}
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Add User Modal */}
+                        {isAddUserModalOpen && (
+                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
+                                    <h3 className="text-xl font-bold mb-4">Add New User</h3>
+                                    <form onSubmit={handleAddUser} className="space-y-4">
+                                        <input
+                                            type="text"
+                                            placeholder="Full Name"
+                                            value={newUser.name}
+                                            onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        />
+                                        <input
+                                            type="email"
+                                            placeholder="Email Address"
+                                            value={newUser.email}
+                                            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        />
+                                        <input
+                                            type="password"
+                                            placeholder="Initial Password"
+                                            value={newUser.password}
+                                            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                            required
+                                            minLength={6}
+                                        />
+                                        <select
+                                            value={newUser.role}
+                                            onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                        >
+                                            <option value="CASHIER">CASHIER</option>
+                                            <option value="MANAGER">MANAGER</option>
+                                            <option value="ADMIN">ADMIN</option>
+                                            <option value="WAREHOUSE">WAREHOUSE</option>
+                                            <option value="ACCOUNTANT">ACCOUNTANT</option>
+                                        </select>
+
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddUserModalOpen(false)}
+                                                className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-200"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={loading}
+                                                className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50"
+                                            >
+                                                {loading ? 'Creating...' : 'Create User'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+                {activeTab === 'system' && user?.role === 'ADMIN' && (
+                    <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                {/* @ts-ignore */}
+                                <Database size={20} className="text-blue-600" />
+                                System Backup
+                            </h2>
+                            <p className="text-gray-600 mb-6">
+                                Download a full backup of the system database (Customers, Inventory, Sales, Expenses) as a ZIP file.
+                                This includes all data in JSON format.
+                            </p>
+
+                            <button
+                                onClick={handleDownloadBackup}
+                                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition"
+                            >
+                                {/* @ts-ignore */}
+                                <Download size={20} />
+                                Download Data Backup
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
-            {activeTab === 'system' && user?.role === 'ADMIN' && (
-                <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border">
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                            {/* @ts-ignore */}
-                            <Database size={20} className="text-blue-600" />
-                            System Backup
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            Download a full backup of the system database (Customers, Inventory, Sales, Expenses) as a ZIP file.
-                            This includes all data in JSON format.
-                        </p>
+
+            {/* Email Config Tab */}
+            {activeTab === 'email' && user?.role === 'ADMIN' && (
+                <div className="bg-white p-6 rounded-xl shadow-sm border max-w-2xl">
+                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        📧 Email Configuration (EmailJS)
+                    </h2>
+                    <p className="text-sm text-gray-500 mb-6">
+                        Configure your EmailJS account to enable sending invoice receipts via email.
+                    </p>
+
+                    <form onSubmit={handleSaveEmailConfig} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Service ID</label>
+                            <input
+                                type="text"
+                                value={emailConfig.serviceId}
+                                onChange={e => setEmailConfig({ ...emailConfig, serviceId: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="service_xxxx"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Template ID</label>
+                            <input
+                                type="text"
+                                value={emailConfig.templateId}
+                                onChange={e => setEmailConfig({ ...emailConfig, templateId: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="template_xxxx"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Public Key</label>
+                            <input
+                                type="text"
+                                value={emailConfig.publicKey}
+                                onChange={e => setEmailConfig({ ...emailConfig, publicKey: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="user_xxxx"
+                                required
+                            />
+                        </div>
+
+                        {emailMessage && (
+                            <div className={`p-3 rounded text-sm ${emailMessage.includes('success') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                {emailMessage}
+                            </div>
+                        )}
 
                         <button
-                            onClick={handleDownloadBackup}
-                            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition"
+                            type="submit"
+                            disabled={emailLoading}
+                            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50"
                         >
-                            {/* @ts-ignore */}
-                            <Download size={20} />
-                            Download Data Backup
+                            {emailLoading ? 'Saving...' : 'Save Configuration'}
                         </button>
-                    </div>
+                    </form>
                 </div>
             )}
         </div>

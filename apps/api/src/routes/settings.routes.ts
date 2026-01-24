@@ -273,4 +273,55 @@ router.get('/balance-history', async (req: Request, res: Response) => {
 // Export helper function for use in other routes
 export { logBalanceTransaction };
 
+// Email Settings Routes
+router.get('/email-config', async (req: Request, res: Response) => {
+    try {
+        const settings = await prisma.systemSetting.findMany({
+            where: {
+                key: { in: ['email_service_id', 'email_template_id', 'email_public_key'] }
+            }
+        });
+
+        const config = {
+            serviceId: settings.find(s => s.key === 'email_service_id')?.value || '',
+            templateId: settings.find(s => s.key === 'email_template_id')?.value || '',
+            publicKey: settings.find(s => s.key === 'email_public_key')?.value || ''
+        };
+
+        res.json(config);
+    } catch (error) {
+        console.error('Failed to fetch email config:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.post('/email-config', authenticate, authorize([Role.ADMIN, Role.MANAGER]), async (req: AuthRequest, res: Response) => {
+    try {
+        const { serviceId, templateId, publicKey } = req.body;
+
+        await prisma.$transaction([
+            prisma.systemSetting.upsert({
+                where: { key: 'email_service_id' },
+                update: { value: serviceId },
+                create: { key: 'email_service_id', value: serviceId, description: 'EmailJS Service ID' }
+            }),
+            prisma.systemSetting.upsert({
+                where: { key: 'email_template_id' },
+                update: { value: templateId },
+                create: { key: 'email_template_id', value: templateId, description: 'EmailJS Template ID' }
+            }),
+            prisma.systemSetting.upsert({
+                where: { key: 'email_public_key' },
+                update: { value: publicKey },
+                create: { key: 'email_public_key', value: publicKey, description: 'EmailJS Public Key' }
+            })
+        ]);
+
+        res.json({ message: 'Email settings updated successfully' });
+    } catch (error) {
+        console.error('Failed to update email config:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 export default router;
