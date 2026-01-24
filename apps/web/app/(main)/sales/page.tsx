@@ -164,6 +164,59 @@ export default function SalesPage() {
         }
     };
 
+
+
+    const handleSingleEmail = async (invoice: any) => {
+        if (!invoice) return;
+
+        // Load config
+        const config = await getEmailConfig();
+        if (!config || !config.serviceId) {
+            alert('Email settings not configured. Please go to Settings > Email Config.');
+            return;
+        }
+
+        if (!invoice.customer?.email) {
+            const email = prompt('Customer has no email. Enter email address:');
+            if (email) {
+                invoice.customer = { ...invoice.customer, email };
+            } else {
+                return;
+            }
+        }
+
+        if (!confirm(`Send invoice ${invoice.invoiceNumber} to ${invoice.customer.email}?`)) return;
+
+        setEmailProcessing(true);
+        setEmailProgress('Sending...');
+
+        try {
+            // Set to state for rendering hidden template
+            setSelectedInvoiceForEmail(invoice);
+
+            // Wait for render
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Generate PDF from hidden template (better for A4 format)
+            const pdfBlob = await generateInvoicePDF('email-invoice-content', invoice.invoiceNumber);
+
+            if (pdfBlob) {
+                await sendInvoiceEmail(invoice, pdfBlob, config);
+                alert('Email sent successfully!');
+            } else {
+                alert('Failed to generate PDF.');
+            }
+
+        } catch (error) {
+            console.error('Failed to email invoice', error);
+            alert('Failed to send email.');
+        } finally {
+            setEmailProcessing(false);
+            setEmailProgress('');
+            setSelectedInvoiceForEmail(null);
+        }
+    };
+
     const handleBatchEmail = async () => {
         if (selectedIds.size === 0) return;
 
@@ -509,6 +562,13 @@ export default function SalesPage() {
                                                             </div>
                                                         </div>
                                                         <div className="flex gap-2 print:hidden">
+                                                            <button
+                                                                onClick={() => handleSingleEmail(selectedInvoice)}
+                                                                disabled={emailProcessing}
+                                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+                                                            >
+                                                                {emailProcessing && selectedInvoiceForEmail?.id === selectedInvoice.id ? 'Sending...' : '📧 Email Invoice'}
+                                                            </button>
                                                             <button
                                                                 onClick={() => window.print()}
                                                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
