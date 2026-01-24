@@ -97,6 +97,13 @@ export default function SalesPage() {
                 // Wait for render
                 await new Promise(resolve => setTimeout(resolve, 500));
 
+                // Check if customer has email
+                if (!invoice.customer?.email) {
+                    console.warn(`Skipping invoice ${invoice.invoiceNumber}: No customer email`);
+                    failCount++;
+                    continue;
+                }
+
                 // Generate PDF
                 const pdfBlob = await generateInvoicePDF('email-invoice-content', invoice.invoiceNumber);
 
@@ -117,7 +124,7 @@ export default function SalesPage() {
         setEmailProcessing(false);
         setEmailProgress('');
         setSelectedInvoiceForEmail(null);
-        alert(`Batch Email Completed.\nSent: ${successCount}\nFailed: ${failCount}`);
+        alert(`Batch Email Completed.\n✅ Sent: ${successCount}\n⚠️ Skipped/Failed: ${failCount}\n\nNote: Invoices are skipped if the customer has no email address.`);
         setSelectedIds(new Set());
     };
 
