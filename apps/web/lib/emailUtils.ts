@@ -99,7 +99,7 @@ export const sendInvoiceEmail = async (
         reader.readAsDataURL(pdfBlob);
     });
 
-    const base64Data = await base64Promise;
+    const base64Data = (await base64Promise) as string;
 
     const templateParams = {
         to_name: invoice.customer?.name || 'Customer',
