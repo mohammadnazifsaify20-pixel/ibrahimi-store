@@ -96,16 +96,11 @@ export const sendInvoiceEmail = async (
 
     // Let's implement downloading the PDF + Sending the Email with Receipt Details.
 
-    // 1. Download PDF
-    const url = window.URL.createObjectURL(pdfBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Invoice-${invoice.invoiceNumber}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    // 1. Send Email directly without downloading
+    // Note: Client-side EmailJS has limits on attachments. 
+    // We will send the data params. If you need the PDF attached, you need a backend proxy or paid EmailJS tier with specific config.
+    // For now, we removed the download as requested.
 
-    // 2. Send Email
     const templateParams = {
         to_name: invoice.customer?.name || 'Customer',
         to_email: invoice.customer?.email,
@@ -135,17 +130,7 @@ export const sendStatementEmail = async (
         throw new Error('EmailJS configuration missing');
     }
 
-    // 1. Download PDF
-    const url = window.URL.createObjectURL(pdfBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Statement-${customer.name}-${new Date().toISOString().split('T')[0]}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    // 2. Send Email
-    // Note: You must update your EmailJS template to accept these variables if you want them displayed in the body
+    // 1. Send Email (No download)
     const templateParams = {
         to_name: customer.name,
         to_email: customer.email,
@@ -153,11 +138,9 @@ export const sendStatementEmail = async (
         statement_date: new Date().toLocaleDateString(),
         total_due: statementData.totalDue,
         transaction_count: statementData.transactionCount,
-        message: 'Please find attached your statement of account (downloaded automatically).'
+        message: 'Please find your statement of account details below.'
     };
 
-    // Use the same template ID for now, or user can configure a separate one later.
-    // Ideally, we should pass a specific template ID for statements, but standardizing one ID is easier for MVP.
     return emailjs.send(
         config.serviceId,
         config.templateId,

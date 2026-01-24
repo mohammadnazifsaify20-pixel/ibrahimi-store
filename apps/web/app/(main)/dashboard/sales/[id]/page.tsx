@@ -155,139 +155,154 @@ export default function InvoicePage() {
             </div>
 
             <div className="bg-white p-8 rounded-xl shadow-sm border print:shadow-none print:border-none print:p-0" id="invoice-content">
-                {/* Header */}
-                <div className="flex justify-between items-start border-b pb-8 mb-8">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900 uppercase">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h2>
-                        <h3 className="text-lg font-bold text-gray-800 font-arabic mt-1">(شرکت پرزه جات ابراهیمی و برادران)</h3>
-                        <p className="text-gray-500 mt-1 font-bold">Khawaja Bahaawuddin - Bandar Takhar | خواجه بهاوالدین بندر تخار</p>
-                        <p className="text-gray-500 font-bold">Contact: +93 70 617 5560 | تماس</p>
-                    </div>
-                    <div className="text-right">
-                        <h3 className="text-xl font-bold text-gray-900">{invoice.invoiceNumber}</h3>
-                        <p className="text-gray-500 mt-1">Date / تاریخ: {format(new Date(invoice.date), 'PPP')}</p>
-                        <p className="text-gray-500">Status / وضعیت: <span className="font-bold uppercase text-gray-900">{invoice.status}</span></p>
-                    </div>
-                </div>
-
-                {/* Customer & Bill To */}
-                <div className="grid grid-cols-2 gap-8 mb-8">
-                    <div>
-                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Bill To / صورت حساب برای</h4>
-                        <p className="font-bold text-gray-900">{invoice.customer?.name || 'Walk-in Customer'}</p>
-                        {/* @ts-ignore */}
-                        {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-xs">ID / شناسنامه: {invoice.customer.displayId}</p>}
-                        {invoice.customer?.phone && <p className="text-gray-600">Phone / تلیفون: {invoice.customer.phone}</p>}
-                        {invoice.customer?.address && <p className="text-gray-600">Address / آدرس: {invoice.customer.address}</p>}
-                    </div>
-                    <div className="text-right">
-                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Served By / فروشنده</h4>
-                        <p className="font-medium text-gray-900">{invoice.user.name}</p>
-                    </div>
-                </div>
-
-                {/* Items Table */}
-                <table className="w-full mb-8">
-                    <thead className="bg-gray-50 text-gray-600 font-bold text-sm uppercase">
+                <table className="w-full">
+                    <thead className="table-header-group">
                         <tr>
-                            <th className="px-4 py-3 text-left">Item / جنس</th>
-                            <th className="px-4 py-3 text-right">Qty / تعداد</th>
-                            <th className="px-4 py-3 text-right">Price (AFG) / قیمت</th>
-                            <th className="px-4 py-3 text-right">Total (AFG) / مجموع</th>
+                            <td colSpan={4}>
+                                {/* Header - Repeats on every page */}
+                                <div className="flex justify-between items-start border-b pb-8 mb-8 pt-4">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900 uppercase">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h2>
+                                        <h3 className="text-lg font-bold text-gray-800 font-arabic mt-1">(شرکت پرزه جات ابراهیمی و برادران)</h3>
+                                        <p className="text-gray-500 mt-1 font-bold">Khawaja Bahaawuddin - Bandar Takhar | خواجه بهاوالدین بندر تخار</p>
+                                        <p className="text-gray-500 font-bold">Contact: +93 70 617 5560 | تماس</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <h3 className="text-xl font-bold text-gray-900">{invoice.invoiceNumber}</h3>
+                                        <p className="text-gray-500 mt-1">Date / تاریخ: {format(new Date(invoice.date), 'PPP')}</p>
+                                        <p className="text-gray-500">Status / وضعیت: <span className="font-bold uppercase text-gray-900">{invoice.status}</span></p>
+                                    </div>
+                                </div>
+
+                                {/* Customer & Bill To */}
+                                <div className="grid grid-cols-2 gap-8 mb-8 text-left">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Bill To / صورت حساب برای</h4>
+                                        <p className="font-bold text-gray-900">{invoice.customer?.name || 'Walk-in Customer'}</p>
+                                        {/* @ts-ignore */}
+                                        {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-xs">ID / شناسنامه: {invoice.customer.displayId}</p>}
+                                        {invoice.customer?.phone && <p className="text-gray-600">Phone / تلیفون: {invoice.customer.phone}</p>}
+                                        {invoice.customer?.address && <p className="text-gray-600">Address / آدرس: {invoice.customer.address}</p>}
+                                    </div>
+                                    <div className="text-right">
+                                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Served By / فروشنده</h4>
+                                        <p className="font-medium text-gray-900">{invoice.user.name}</p>
+                                    </div>
+                                </div>
+
+                                {/* Inner Table Header for Items */}
+                                <div className="border-b-2 border-gray-200 font-bold text-sm uppercase grid grid-cols-12 gap-4 pb-2 mb-4 text-gray-600 text-left">
+                                    <div className="col-span-5">Item / جنس</div>
+                                    <div className="col-span-2 text-right">Qty / تعداد</div>
+                                    <div className="col-span-2 text-right">Price (AFG) / قیمت</div>
+                                    <div className="col-span-3 text-right">Total (AFG) / مجموع</div>
+                                </div>
+                            </td>
                         </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody className="table-row-group">
                         {invoice.items.map((item) => (
-                            <tr key={item.id}>
-                                <td className="px-4 py-3">
-                                    <p className="font-medium text-gray-900">{item.product.name}</p>
-                                    <p className="text-xs text-gray-500">{item.product.sku}</p>
+                            <tr key={item.id} className="border-b border-gray-100 last:border-0 page-break-inside-avoid">
+                                <td colSpan={4}>
+                                    <div className="grid grid-cols-12 gap-4 py-3 items-center">
+                                        <div className="col-span-5">
+                                            <p className="font-medium text-gray-900 text-left">{item.product.name}</p>
+                                            <p className="text-xs text-gray-500 text-left">{item.product.sku}</p>
+                                        </div>
+                                        <div className="col-span-2 text-right text-gray-600">
+                                            {item.quantity}
+                                            {item.returnedQuantity > 0 && (
+                                                <span className="block text-xs text-red-500 font-bold">(-{item.returnedQuantity} Returned)</span>
+                                            )}
+                                        </div>
+                                        <div className="col-span-2 text-right text-gray-600">
+                                            ؋{(Number(item.unitPrice) * Number(invoice.exchangeRate || 70)).toFixed(0)}
+                                        </div>
+                                        <div className="col-span-3 text-right font-medium text-gray-900">
+                                            ؋{(Number(item.total) * Number(invoice.exchangeRate || 70)).toFixed(0)}
+                                        </div>
+                                    </div>
                                 </td>
-                                <td className="px-4 py-3 text-right text-gray-600">
-                                    {item.quantity}
-                                    {item.returnedQuantity > 0 && (
-                                        <span className="block text-xs text-red-500 font-bold">(-{item.returnedQuantity} Returned)</span>
-                                    )}
-                                </td>
-                                <td className="px-4 py-3 text-right text-gray-600">؋{(Number(item.unitPrice) * Number(invoice.exchangeRate || 70)).toFixed(0)}</td>
-                                <td className="px-4 py-3 text-right font-medium text-gray-900">؋{(Number(item.total) * Number(invoice.exchangeRate || 70)).toFixed(0)}</td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
 
-                {/* Totals */}
-                <div className="flex justify-end">
-                    <div className="w-72 space-y-3">
-                        <div className="flex justify-between text-gray-600">
-                            <span>Subtotal (AFG) / جمع فرعی:</span>
-                            <span className="font-medium">؋{Math.floor(subtotalAFN).toLocaleString()}</span>
-                        </div>
-                        {Number(invoice.tax) > 0 && (
+                {/* Footer Section (Totals + Terms) - Keep together */}
+                <div className="page-break-inside-avoid mt-8">
+                    {/* Totals */}
+                    <div className="flex justify-end">
+                        <div className="w-72 space-y-3">
                             <div className="flex justify-between text-gray-600">
-                                <span>Tax / مالیه:</span>
-                                <span className="font-medium">؋{Math.floor(taxAFN).toLocaleString()}</span>
+                                <span>Subtotal (AFG) / جمع فرعی:</span>
+                                <span className="font-medium">؋{Math.floor(subtotalAFN).toLocaleString()}</span>
                             </div>
-                        )}
-                        {Number(invoice.discount) > 0 && (
-                            <div className="flex justify-between text-green-600">
-                                <span>Discount / تخفیف:</span>
-                                <span className="font-medium">-؋{Math.floor(discountAFN).toLocaleString()}</span>
+                            {Number(invoice.tax) > 0 && (
+                                <div className="flex justify-between text-gray-600">
+                                    <span>Tax / مالیه:</span>
+                                    <span className="font-medium">؋{Math.floor(taxAFN).toLocaleString()}</span>
+                                </div>
+                            )}
+                            {Number(invoice.discount) > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>Discount / تخفیف:</span>
+                                    <span className="font-medium">-؋{Math.floor(discountAFN).toLocaleString()}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-xl font-bold text-gray-900 border-t pt-3">
+                                <span>Total (AFG) / مجموع:</span>
+                                <span>؋{Math.floor(totalAFN).toLocaleString()}</span>
                             </div>
-                        )}
-                        <div className="flex justify-between text-xl font-bold text-gray-900 border-t pt-3">
-                            <span>Total (AFG) / مجموع:</span>
-                            <span>؋{Math.floor(totalAFN).toLocaleString()}</span>
+
+                            {/* Return / Refund Info */}
+                            {(() => {
+                                const returnedVal = invoice.items.reduce((acc, item) => acc + ((item.returnedQuantity || 0) * Number(item.unitPrice)), 0);
+                                const returnedValAFN = returnedVal * exchangeRate;
+
+                                if (returnedVal > 0) {
+                                    return (
+                                        <>
+                                            <div className="flex justify-between text-red-600 border-b pb-2">
+                                                <span>Less Returns / برگشتی:</span>
+                                                <span>-؋{Math.floor(returnedValAFN).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between text-lg font-bold text-gray-800 pt-1">
+                                                <span>Net Total (AFG) / مجموع خالص:</span>
+                                                <span>؋{Math.floor((Number(invoice.total) - returnedVal) * exchangeRate).toLocaleString()}</span>
+                                            </div>
+                                        </>
+                                    );
+                                }
+                                return null;
+                            })()}
+
+                            <div className="flex justify-between text-gray-600 pt-2 border-t mt-2">
+                                <span>Paid Amount (AFG) / پرداخت شده:</span>
+                                <span className="font-medium text-green-600">؋{Math.floor(paidAFN).toLocaleString()}</span>
+                            </div>
+                            {Number(invoice.outstandingAmount) > 0 && (
+                                <div className="flex justify-between text-red-600 font-bold">
+                                    <span>Balance Due (AFG) / باقیمانده:</span>
+                                    <span>؋{Math.floor(outstandingAFN).toLocaleString()}</span>
+                                </div>
+                            )}
                         </div>
-
-                        {/* Return / Refund Info */}
-                        {(() => {
-                            const returnedVal = invoice.items.reduce((acc, item) => acc + ((item.returnedQuantity || 0) * Number(item.unitPrice)), 0);
-                            const returnedValAFN = returnedVal * exchangeRate;
-
-                            if (returnedVal > 0) {
-                                return (
-                                    <>
-                                        <div className="flex justify-between text-red-600 border-b pb-2">
-                                            <span>Less Returns / برگشتی:</span>
-                                            <span>-؋{Math.floor(returnedValAFN).toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex justify-between text-lg font-bold text-gray-800 pt-1">
-                                            <span>Net Total (AFG) / مجموع خالص:</span>
-                                            <span>؋{Math.floor((Number(invoice.total) - returnedVal) * exchangeRate).toLocaleString()}</span>
-                                        </div>
-                                    </>
-                                );
-                            }
-                            return null;
-                        })()}
-
-                        <div className="flex justify-between text-gray-600 pt-2 border-t mt-2">
-                            <span>Paid Amount (AFG) / پرداخت شده:</span>
-                            <span className="font-medium text-green-600">؋{Math.floor(paidAFN).toLocaleString()}</span>
-                        </div>
-                        {Number(invoice.outstandingAmount) > 0 && (
-                            <div className="flex justify-between text-red-600 font-bold">
-                                <span>Balance Due (AFG) / باقیمانده:</span>
-                                <span>؋{Math.floor(outstandingAFN).toLocaleString()}</span>
-                            </div>
-                        )}
                     </div>
-                </div>
 
-                {/* Footer */}
-                <div className="mt-12 pt-8 border-t space-y-2 text-center">
-                    <p className="text-gray-700 font-bold">Thank you for your business! / از خریداری شما متشکریم</p>
-                    <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mt-4">
-                        <p className="text-red-600 font-bold text-sm">
-                            ⚠️ RETURN POLICY / قانون برگشت جنس ⚠️
-                        </p>
-                        <p className="text-gray-800 font-medium text-sm mt-2" style={{ direction: 'rtl' }}>
-                            جنس فروخته شده بعد از بیست و چهار (24) ساعت برگردانده نمیشود
-                        </p>
-                        <p className="text-gray-700 text-xs mt-1">
-                            Items sold cannot be returned after 24 hours
-                        </p>
+                    {/* Footer */}
+                    <div className="mt-12 pt-8 border-t space-y-2 text-center">
+                        <p className="text-gray-700 font-bold">Thank you for your business! / از خریداری شما متشکریم</p>
+                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mt-4 print:border-yellow-300">
+                            <p className="text-red-600 font-bold text-sm">
+                                ⚠️ RETURN POLICY / قانون برگشت جنس ⚠️
+                            </p>
+                            <p className="text-gray-800 font-medium text-sm mt-2" style={{ direction: 'rtl' }}>
+                                جنس فروخته شده بعد از بیست و چهار (24) ساعت برگردانده نمیشود
+                            </p>
+                            <p className="text-gray-700 text-xs mt-1">
+                                Items sold cannot be returned after 24 hours
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
