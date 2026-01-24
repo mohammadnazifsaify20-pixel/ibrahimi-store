@@ -78,15 +78,11 @@ export default function InvoicePage() {
             // Let's prompt if we can't find email.
         }
 
-        // We'll trust the user to enter email if missing or confirm
-        // Actually, interface Invoice says `customer: { name... }`. Code line 23 doesn't explicitly list email but line 114 shows it might be there.
-        // Let's assume customer object might have email or we prompt.
+        // Always prompt to confirm or edit the email
+        const currentEmail = (invoice.customer as any)?.email || '';
+        const customerEmail = prompt('Confirm or Enter Email Address:', currentEmail);
 
-        let customerEmail = (invoice.customer as any)?.email;
-        if (!customerEmail) {
-            customerEmail = prompt('Customer email is missing. Please enter email address:');
-            if (!customerEmail) return;
-        }
+        if (!customerEmail) return; // User cancelled or entered empty string
 
         if (!confirm(`Send invoice to ${customerEmail}?`)) return;
 

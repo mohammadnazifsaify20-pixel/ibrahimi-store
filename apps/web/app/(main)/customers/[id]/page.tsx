@@ -84,16 +84,14 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
             return;
         }
 
-        let customerEmail = customer.email;
-        if (!customerEmail) {
-            customerEmail = prompt('Customer email is missing. Please enter email address:');
-            if (customerEmail) {
-                // Update local customer object temporarily for this action
-                customer.email = customerEmail;
-            } else {
-                return;
-            }
-        }
+        // Always prompt to confirm or edit the email
+        const currentEmail = customer.email || '';
+        const customerEmail = prompt('Confirm or Enter Email Address:', currentEmail);
+
+        if (!customerEmail) return; // User cancelled or entered empty string
+
+        // Update local customer object temporarily for this action so the generated PDF/email has it if needed
+        customer.email = customerEmail;
 
         if (!confirm(`Generate and email full statement to ${customerEmail}?`)) return;
 
