@@ -40,7 +40,7 @@ body {
     display: none !important;
   }
 
-  /* Revert to the user's preferred "Old" method but fix cutoff */
+  /* Restore the original "Premium" look (Colors, Borders, Shadows) */
   #invoice-content {
     visibility: visible !important;
     position: absolute;
@@ -49,8 +49,6 @@ body {
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
     background: white !important;
     overflow: visible !important;
     z-index: 9999;
@@ -72,10 +70,8 @@ body {
     page-break-after: auto !important;
   }
 
-  /* Fix text styling for print */
+  /* Preserve all styling, colors and backgrounds from the original design */
   * {
-    color: black !important;
-    background: transparent !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
