@@ -168,6 +168,9 @@ export default function InvoicePage() {
                                         <p className="text-gray-500 font-bold">Contact: +93 70 617 5560 | تماس</p>
                                     </div>
                                     <div className="text-right">
+                                        <div className="mb-2">
+                                            <span className="bg-gray-900 text-white px-3 py-1 rounded text-xs font-bold uppercase tracking-widest pb-1.5 pt-1">Customer Receipt / رسید مشتری</span>
+                                        </div>
                                         <h3 className="text-xl font-bold text-gray-900">{invoice.invoiceNumber}</h3>
                                         <p className="text-gray-500 mt-1">Date / تاریخ: {format(new Date(invoice.date), 'PPP')}</p>
                                         <p className="text-gray-500">Status / وضعیت: <span className="font-bold uppercase text-gray-900">{invoice.status}</span></p>

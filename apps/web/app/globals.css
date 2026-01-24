@@ -25,6 +25,21 @@ body {
     height: auto !important;
     overflow: visible !important;
     background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Reset layout containers that trap the height/pagination */
+  div,
+  main,
+  section,
+  [class*="overflow-hidden"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    display: block !important;
+    position: static !important;
   }
 
   body {
