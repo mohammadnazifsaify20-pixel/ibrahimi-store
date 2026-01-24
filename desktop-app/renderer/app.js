@@ -462,12 +462,12 @@ function renderSales() {
         thRef.parentNode.insertBefore(chkTh, thRef);
 
         // Insert Batch Action Button above table if needed
-        const header = document.querySelector('#page-sales h3');
+        const header = document.querySelector('#page-sales h2');
         if (header && !document.getElementById('btn-batch-email')) {
             const div = document.createElement('div');
             div.className = 'flex justify-between items-center mb-4';
             div.innerHTML = `
-                <h3 class="text-2xl font-bold">Sales History</h3>
+                <h2 class="text-3xl font-bold">Sales History</h2>
                 <button id="btn-batch-email" onclick="emailBatch()" class="btn btn-primary" style="display:none;">Email Selected</button>
              `;
             header.replaceWith(div);
@@ -647,13 +647,7 @@ function renderInvoiceToHTML(invoice) {
     `;
 }
 
-openModal('modal-invoice-detail');
-        }
-    } catch (error) {
-    console.error('View invoice error:', error);
-    alert('Error loading invoice');
-}
-}
+
 
 function printInvoice() {
     window.print();
