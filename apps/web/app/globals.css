@@ -31,6 +31,10 @@ body {
     padding: 0 !important;
   }
 
+  body {
+    visibility: hidden !important;
+  }
+
   /* Reset layout containers that trap the height/pagination */
   main,
   [class*="overflow-hidden"],
@@ -47,8 +51,7 @@ body {
     padding: 0 !important;
   }
 
-  /* Hide everything except the invoice chain */
-  body>*:not(main),
+  /* Hide specific UI elements */
   nav,
   aside,
   header,
@@ -59,9 +62,12 @@ body {
 
   /* Ensure the invoice container is visible and flows naturally at the top */
   #invoice-content {
-    display: block !important;
     visibility: visible !important;
-    position: static !important;
+    display: block !important;
+    position: absolute !important;
+    /* Force to absolute top to bypass layout offsets */
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;

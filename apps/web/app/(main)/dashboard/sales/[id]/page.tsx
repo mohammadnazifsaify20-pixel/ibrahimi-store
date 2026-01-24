@@ -207,10 +207,10 @@ export default function InvoicePage() {
                         {invoice.items.map((item) => (
                             <tr key={item.id} className="border-b border-gray-100 last:border-0 page-break-inside-avoid">
                                 <td colSpan={4}>
-                                    <div className="grid grid-cols-12 gap-2 py-1 items-center">
+                                    <div className="grid grid-cols-12 gap-2 py-0.5 items-center">
                                         <div className="col-span-4">
-                                            <p className="font-medium text-gray-900 text-left text-xs leading-tight">{item.product.name}</p>
-                                            <p className="text-[9px] text-gray-500 text-left leading-tight italic">{item.product.sku}</p>
+                                            <p className="font-medium text-gray-900 text-left text-xs leading-none">{item.product.name}</p>
+                                            <p className="text-[9px] text-gray-500 text-left leading-none italic">{item.product.sku}</p>
                                         </div>
                                         <div className="col-span-2 text-right text-gray-600 text-xs">
                                             {item.quantity}
@@ -229,15 +229,15 @@ export default function InvoicePage() {
                 </table>
 
                 {/* Footer Section (Totals + Terms) - Keep together */}
-                <div className="page-break-inside-avoid mt-4">
+                <div className="page-break-inside-avoid mt-2 border-t pt-2">
                     {/* Totals */}
                     <div className="flex justify-end">
-                        <div className="w-64 space-y-2">
-                            <div className="flex justify-between text-gray-600 text-sm">
+                        <div className="w-64 space-y-1">
+                            <div className="flex justify-between text-gray-600 text-xs">
                                 <span>Subtotal (AFG):</span>
                                 <span className="font-medium">؋{Math.floor(subtotalAFN).toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-gray-500 text-xs border-b pb-1">
+                            <div className="flex justify-between text-gray-500 text-[10px] pb-1">
                                 <span>Total Qty:</span>
                                 <span className="font-medium">{invoice.items.reduce((acc, item) => acc + item.quantity, 0)}</span>
                             </div>
