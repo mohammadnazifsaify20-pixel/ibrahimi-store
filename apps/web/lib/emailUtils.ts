@@ -97,13 +97,15 @@ export const sendInvoiceEmail = async (
     // Let's implement downloading the PDF + Sending the Email with Receipt Details.
 
     // 1. Send Email directly without downloading
-    // Note: Client-side EmailJS has limits on attachments. 
-    // We will send the data params. If you need the PDF attached, you need a backend proxy or paid EmailJS tier with specific config.
-    // For now, we removed the download as requested.
-
     const templateParams = {
         to_name: invoice.customer?.name || 'Customer',
         to_email: invoice.customer?.email,
+        // Redundant fields to match common template variables
+        email: invoice.customer?.email,
+        recipient_email: invoice.customer?.email,
+        user_email: invoice.customer?.email,
+        reply_to: 'ibrahimistore@gmail.com', // Optional: set to store email
+
         invoice_number: invoice.invoiceNumber,
         date: new Date(invoice.date).toLocaleDateString(),
         total_amount: invoice.totalLocal ? invoice.totalLocal : (Number(invoice.total) * (invoice.exchangeRate || 70)).toFixed(0),
@@ -111,6 +113,8 @@ export const sendInvoiceEmail = async (
         outstanding_amount: ((Number(invoice.total) - Number(invoice.paidAmount || 0)) * (invoice.exchangeRate || 70)).toFixed(0),
         items_list: invoice.items.map((i: any) => `${i.product?.name || 'Item'} x${i.quantity}`).join('\n')
     };
+
+    console.log('Sending email with params:', templateParams);
 
     return emailjs.send(
         config.serviceId,
@@ -134,6 +138,11 @@ export const sendStatementEmail = async (
     const templateParams = {
         to_name: customer.name,
         to_email: customer.email,
+        // Redundant fields
+        email: customer.email,
+        recipient_email: customer.email,
+        user_email: customer.email,
+
         subject: `Statement of Account - ${customer.name}`,
         statement_date: new Date().toLocaleDateString(),
         total_due: statementData.totalDue,
@@ -141,8 +150,10 @@ export const sendStatementEmail = async (
         message: 'Please find your statement of account details below.'
     };
 
+    console.log('Sending statement with params:', templateParams);
+
     return emailjs.send(
-        config.serviceId,
+        config.serviceId, // It might be safer to use the same Service ID if the statement template is in the same service
         config.templateId,
         templateParams,
         config.publicKey

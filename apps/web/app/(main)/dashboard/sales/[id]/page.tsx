@@ -192,9 +192,9 @@ export default function InvoicePage() {
 
                                 {/* Inner Table Header for Items */}
                                 <div className="border-b-2 border-gray-200 font-bold text-sm uppercase grid grid-cols-12 gap-4 pb-2 mb-4 text-gray-600 text-left">
-                                    <div className="col-span-5">Item / جنس</div>
+                                    <div className="col-span-4">Item / جنس</div>
                                     <div className="col-span-2 text-right">Qty / تعداد</div>
-                                    <div className="col-span-2 text-right">Price (AFG) / قیمت</div>
+                                    <div className="col-span-3 text-right">Price (AFG) / قیمت</div>
                                     <div className="col-span-3 text-right">Total (AFG) / مجموع</div>
                                 </div>
                             </td>
@@ -205,7 +205,7 @@ export default function InvoicePage() {
                             <tr key={item.id} className="border-b border-gray-100 last:border-0 page-break-inside-avoid">
                                 <td colSpan={4}>
                                     <div className="grid grid-cols-12 gap-4 py-3 items-center">
-                                        <div className="col-span-5">
+                                        <div className="col-span-4">
                                             <p className="font-medium text-gray-900 text-left">{item.product.name}</p>
                                             <p className="text-xs text-gray-500 text-left">{item.product.sku}</p>
                                         </div>
@@ -215,7 +215,7 @@ export default function InvoicePage() {
                                                 <span className="block text-xs text-red-500 font-bold">(-{item.returnedQuantity} Returned)</span>
                                             )}
                                         </div>
-                                        <div className="col-span-2 text-right text-gray-600">
+                                        <div className="col-span-3 text-right text-gray-600">
                                             ؋{(Number(item.unitPrice) * Number(invoice.exchangeRate || 70)).toFixed(0)}
                                         </div>
                                         <div className="col-span-3 text-right font-medium text-gray-900">

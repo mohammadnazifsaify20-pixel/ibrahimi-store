@@ -44,10 +44,30 @@ body {
     box-shadow: none;
     background: white;
     z-index: 9999;
+    overflow: visible;
+    /* Important for multiple pages */
   }
 
   /* Ensure text is black for printing */
   * {
     color: black !important;
+  }
+
+  /* Table Header Repetition Support */
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
   }
 }
