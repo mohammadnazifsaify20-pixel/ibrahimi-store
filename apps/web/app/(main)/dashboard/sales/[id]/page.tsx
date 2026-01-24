@@ -178,24 +178,24 @@ export default function InvoicePage() {
                                 </div>
 
                                 {/* Customer & Bill To */}
-                                <div className="grid grid-cols-2 gap-8 mb-8 text-left">
+                                <div className="grid grid-cols-2 gap-4 mb-4 text-left">
                                     <div>
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Bill To / صورت حساب برای</h4>
-                                        <p className="font-bold text-gray-900">{invoice.customer?.name || 'Walk-in Customer'}</p>
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Bill To / صورت حساب برای</h4>
+                                        <p className="font-bold text-gray-900 leading-tight">{invoice.customer?.name || 'Walk-in Customer'}</p>
                                         {/* @ts-ignore */}
-                                        {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-xs">ID / شناسنامه: {invoice.customer.displayId}</p>}
-                                        {invoice.customer?.phone && <p className="text-gray-600">Phone / تلیفون: {invoice.customer.phone}</p>}
-                                        {(invoice.customer as any)?.email && <p className="text-gray-600">Email / ایمیل: {(invoice.customer as any).email}</p>}
-                                        {invoice.customer?.address && <p className="text-gray-600">Address / آدرس: {invoice.customer.address}</p>}
+                                        {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-[10px]">ID / شناسنامه: {invoice.customer.displayId}</p>}
+                                        {invoice.customer?.phone && <p className="text-gray-600 text-xs text-left">Phone / تلیفون: {invoice.customer.phone}</p>}
+                                        {(invoice.customer as any)?.email && <p className="text-gray-600 text-xs text-left">Email / ایمیل: {(invoice.customer as any).email}</p>}
+                                        {invoice.customer?.address && <p className="text-gray-600 text-xs text-left">Address / آدرس: {invoice.customer.address}</p>}
                                     </div>
                                     <div className="text-right">
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Served By / فروشنده</h4>
-                                        <p className="font-medium text-gray-900">{invoice.user.name}</p>
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Served By / فروشنده</h4>
+                                        <p className="font-medium text-gray-900 text-sm">{invoice.user.name}</p>
                                     </div>
                                 </div>
 
                                 {/* Inner Table Header for Items */}
-                                <div className="border-b-2 border-gray-200 font-bold text-sm uppercase grid grid-cols-12 gap-4 pb-2 mb-4 text-gray-600 text-left">
+                                <div className="border-b border-gray-200 font-bold text-xs uppercase grid grid-cols-12 gap-4 pb-1 mb-2 text-gray-600 text-left">
                                     <div className="col-span-4">Item / جنس</div>
                                     <div className="col-span-2 text-right">Qty / تعداد</div>
                                     <div className="col-span-3 text-right">Price (AFG) / قیمت</div>
