@@ -29,6 +29,16 @@ body {
     print-color-adjust: exact !important;
   }
 
+  /* Hide everything by default, then show invoice content specifically */
+  body>*:not(#invoice-content),
+  nav,
+  aside,
+  header,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
   /* Reset layout containers that trap the height/pagination (very important!) */
   main,
   [class*="overflow-hidden"],
@@ -41,34 +51,22 @@ body {
     min-height: 0 !important;
     position: static !important;
     display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  body {
-    visibility: hidden;
-  }
-
-  /* Hide specific UI elements */
-  header,
-  aside,
-  .no-print,
-  button,
-  nav {
-    display: none !important;
-  }
-
-  /* Ensure the invoice container is visible and flows naturally */
+  /* Ensure the invoice container is visible and flows naturally at the top */
   #invoice-content {
+    display: block !important;
     visibility: visible !important;
-    position: relative !important;
-    /* Static/Relative allows multi-page splitting */
-    left: 0;
-    top: 0;
+    position: static !important;
+    /* Static is best for avoiding blank space */
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
     overflow: visible !important;
-    z-index: 100 !important;
+    z-index: 1 !important;
   }
 
   /* Table layout for header repetition */

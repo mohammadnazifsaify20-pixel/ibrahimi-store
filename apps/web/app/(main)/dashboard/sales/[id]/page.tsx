@@ -160,12 +160,12 @@ export default function InvoicePage() {
                         <tr>
                             <td colSpan={4}>
                                 {/* Header - Repeats on every page */}
-                                <div className="flex justify-between items-start border-b pb-8 mb-8 pt-4">
+                                <div className="flex justify-between items-start border-b pb-4 mb-4 pt-2">
                                     <div>
-                                        <h2 className="text-xl font-bold text-gray-900 uppercase">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h2>
-                                        <h3 className="text-lg font-bold text-gray-800 font-arabic mt-1">(شرکت پرزه جات ابراهیمی و برادران)</h3>
-                                        <p className="text-gray-500 mt-1 font-bold">Khawaja Bahaawuddin - Bandar Takhar | خواجه بهاوالدین بندر تخار</p>
-                                        <p className="text-gray-500 font-bold">Contact: +93 70 617 5560 | تماس</p>
+                                        <h2 className="text-lg font-bold text-gray-900 uppercase">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h2>
+                                        <h3 className="text-base font-bold text-gray-800 font-arabic mt-0.5">(شرکت پرزه جات ابراهیمی و برادران)</h3>
+                                        <p className="text-gray-500 text-xs font-bold">Khawaja Bahaawuddin - Bandar Takhar | خواجه بهاوالدین بندر تخار</p>
+                                        <p className="text-gray-500 text-xs font-bold">Contact: +93 70 617 5560 | تماس</p>
                                     </div>
                                     <div className="text-right">
                                         <div className="mb-2">
@@ -208,21 +208,21 @@ export default function InvoicePage() {
                         {invoice.items.map((item) => (
                             <tr key={item.id} className="border-b border-gray-100 last:border-0 page-break-inside-avoid">
                                 <td colSpan={4}>
-                                    <div className="grid grid-cols-12 gap-4 py-3 items-center">
+                                    <div className="grid grid-cols-12 gap-4 py-1.5 items-center">
                                         <div className="col-span-4">
-                                            <p className="font-medium text-gray-900 text-left">{item.product.name}</p>
-                                            <p className="text-xs text-gray-500 text-left">{item.product.sku}</p>
+                                            <p className="font-medium text-gray-900 text-left text-sm leading-tight">{item.product.name}</p>
+                                            <p className="text-[10px] text-gray-500 text-left leading-tight">{item.product.sku}</p>
                                         </div>
-                                        <div className="col-span-2 text-right text-gray-600">
+                                        <div className="col-span-2 text-right text-gray-600 text-sm">
                                             {item.quantity}
                                             {item.returnedQuantity > 0 && (
-                                                <span className="block text-xs text-red-500 font-bold">(-{item.returnedQuantity} Returned)</span>
+                                                <span className="block text-[10px] text-red-500 font-bold">(-{item.returnedQuantity} Returned)</span>
                                             )}
                                         </div>
-                                        <div className="col-span-3 text-right text-gray-600">
+                                        <div className="col-span-3 text-right text-gray-600 text-sm">
                                             ؋{(Number(item.unitPrice) * Number(invoice.exchangeRate || 70)).toFixed(0)}
                                         </div>
-                                        <div className="col-span-3 text-right font-medium text-gray-900">
+                                        <div className="col-span-3 text-right font-medium text-gray-900 text-sm">
                                             ؋{(Number(item.total) * Number(invoice.exchangeRate || 70)).toFixed(0)}
                                         </div>
                                     </div>
@@ -233,16 +233,16 @@ export default function InvoicePage() {
                 </table>
 
                 {/* Footer Section (Totals + Terms) - Keep together */}
-                <div className="page-break-inside-avoid mt-8">
+                <div className="page-break-inside-avoid mt-4">
                     {/* Totals */}
                     <div className="flex justify-end">
-                        <div className="w-72 space-y-3">
-                            <div className="flex justify-between text-gray-600">
-                                <span>Subtotal (AFG) / جمع فرعی:</span>
+                        <div className="w-64 space-y-2">
+                            <div className="flex justify-between text-gray-600 text-sm">
+                                <span>Subtotal (AFG):</span>
                                 <span className="font-medium">؋{Math.floor(subtotalAFN).toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-gray-600 text-sm border-b pb-1 mb-1">
-                                <span>Total Item Qty / مجموع تعداد اجناس:</span>
+                            <div className="flex justify-between text-gray-500 text-xs border-b pb-1">
+                                <span>Total Qty:</span>
                                 <span className="font-medium">{invoice.items.reduce((acc, item) => acc + item.quantity, 0)}</span>
                             </div>
                             {Number(invoice.tax) > 0 && (
