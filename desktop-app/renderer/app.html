@@ -557,6 +557,72 @@
         </div>
     </div>
 
+    <!-- Invoice Detail Modal -->
+    <div id="modal-invoice-detail" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Invoice Details</h3>
+                <button onclick="closeModal('modal-invoice-detail')" class="text-gray-500 text-xl">&times;</button>
+            </div>
+            <div id="invoice-content" class="bg-white p-4 border rounded mb-4">
+                <!-- Content injected via JS -->
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="printInvoice()"
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Print</button>
+                <button id="btn-email-invoice" onclick="emailInvoice()"
+                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Email</button>
+                <button onclick="closeModal('modal-invoice-detail')"
+                    class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receive Payment Modal -->
+    <div id="modal-receive-payment" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4">Receive Payment</h3>
+            <form onsubmit="processPayment(event)" class="space-y-4">
+                <input type="hidden" id="payment-invoice-id">
+                <div class="bg-gray-100 p-4 rounded-lg space-y-2">
+                    <div class="flex justify-between">
+                        <span>Invoice #:</span>
+                        <span class="font-bold" id="payment-invoice-number"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Total Amount:</span>
+                        <span class="font-bold" id="payment-total"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Already Paid:</span>
+                        <span class="font-bold text-green-600" id="payment-already-paid"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Outstanding:</span>
+                        <span class="font-bold text-red-600" id="payment-outstanding"></span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Payment Amount (AFN)</label>
+                    <input type="number" id="payment-amount" step="0.01" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Payment Method</label>
+                    <select id="payment-method" required>
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="bank">Bank Transfer</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-success">Receive Payment</button>
+                    <button type="button" onclick="closeModal('modal-receive-payment')"
+                        class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Add Product Modal -->
     <div id="modal-add-product" class="modal">
         <div class="bg-white rounded-lg p-6 w-full max-w-2xl">
