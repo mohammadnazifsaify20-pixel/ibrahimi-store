@@ -655,4 +655,36 @@ router.post('/delete-all', authenticate, authorize([Role.ADMIN]), async (req: Au
     }
 });
 
+// --- Public Routes ---
+// Get single invoice for public view (No authentication required)
+router.get('/public/invoice/:id', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const invoice = await prisma.invoice.findUnique({
+            where: { id: Number(id) },
+            include: {
+                items: {
+                    include: {
+                        product: {
+                            select: { name: true, sku: true }
+                        }
+                    }
+                },
+                customer: true,
+                user: {
+                    select: { name: true }
+                }
+            }
+        });
+
+        if (!invoice) {
+            return res.status(404).json({ message: 'Invoice not found' });
+        }
+
+        res.json(invoice);
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 export default router;
