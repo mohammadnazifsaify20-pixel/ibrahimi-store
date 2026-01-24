@@ -86,7 +86,7 @@ export const sendInvoiceEmail = async (
             const result = reader.result as string;
             if (result) {
                 const parts = result.split(',');
-                if (parts.length > 1 && parts[1]) {
+                if (parts.length > 1 && typeof parts[1] === 'string') {
                     resolve(parts[1]);
                 } else {
                     reject(new Error('Invalid PDF data format'));
