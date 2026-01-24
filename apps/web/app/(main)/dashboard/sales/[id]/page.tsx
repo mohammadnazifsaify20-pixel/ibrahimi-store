@@ -160,12 +160,11 @@ export default function InvoicePage() {
                         <tr>
                             <td colSpan={4}>
                                 {/* Header - Repeats on every page */}
-                                <div className="flex justify-between items-start border-b pb-4 mb-4 pt-2">
+                                <div className="flex justify-between items-start border-b pb-2 mb-2 pt-1">
                                     <div>
-                                        <h2 className="text-lg font-bold text-gray-900 uppercase">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h2>
-                                        <h3 className="text-base font-bold text-gray-800 font-arabic mt-0.5">(شرکت پرزه جات ابراهیمی و برادران)</h3>
-                                        <p className="text-gray-500 text-xs font-bold">Khawaja Bahaawuddin - Bandar Takhar | خواجه بهاوالدین بندر تخار</p>
-                                        <p className="text-gray-500 text-xs font-bold">Contact: +93 70 617 5560 | تماس</p>
+                                        <h2 className="text-base font-bold text-gray-900 uppercase">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h2>
+                                        <h3 className="text-sm font-bold text-gray-800 font-arabic mt-0">(شرکت پرزه جات ابراهیمی و برادران)</h3>
+                                        <p className="text-gray-500 text-[10px] font-bold">Khawaja Bahaawuddin - Bandar Takhar | تماس: 0706175560</p>
                                     </div>
                                     <div className="text-right">
                                         <div className="mb-2">
@@ -178,19 +177,19 @@ export default function InvoicePage() {
                                 </div>
 
                                 {/* Customer & Bill To */}
-                                <div className="grid grid-cols-2 gap-4 mb-4 text-left">
+                                <div className="grid grid-cols-2 gap-2 mb-2 text-left">
                                     <div>
-                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Bill To / صورت حساب برای</h4>
-                                        <p className="font-bold text-gray-900 leading-tight">{invoice.customer?.name || 'Walk-in Customer'}</p>
+                                        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Bill To / صورت حساب برای</h4>
+                                        <p className="font-bold text-gray-900 leading-tight text-sm">{invoice.customer?.name || 'Walk-in Customer'}</p>
                                         {/* @ts-ignore */}
-                                        {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-[10px]">ID / شناسنامه: {invoice.customer.displayId}</p>}
-                                        {invoice.customer?.phone && <p className="text-gray-600 text-xs text-left">Phone / تلیفون: {invoice.customer.phone}</p>}
-                                        {(invoice.customer as any)?.email && <p className="text-gray-600 text-xs text-left">Email / ایمیل: {(invoice.customer as any).email}</p>}
-                                        {invoice.customer?.address && <p className="text-gray-600 text-xs text-left">Address / آدرس: {invoice.customer.address}</p>}
+                                        {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-[9px]">ID: {invoice.customer.displayId}</p>}
+                                        {invoice.customer?.phone && <p className="text-gray-600 text-[10px] text-left">Phone: {invoice.customer.phone}</p>}
+                                        {(invoice.customer as any)?.email && <p className="text-gray-600 text-[10px] text-left">Email: {(invoice.customer as any).email}</p>}
+                                        {invoice.customer?.address && <p className="text-gray-600 text-[10px] text-left line-clamp-1">Address: {invoice.customer.address}</p>}
                                     </div>
                                     <div className="text-right">
-                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Served By / فروشنده</h4>
-                                        <p className="font-medium text-gray-900 text-sm">{invoice.user.name}</p>
+                                        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Served By / فروشنده</h4>
+                                        <p className="font-medium text-gray-900 text-xs">{invoice.user.name}</p>
                                     </div>
                                 </div>
 
@@ -208,22 +207,19 @@ export default function InvoicePage() {
                         {invoice.items.map((item) => (
                             <tr key={item.id} className="border-b border-gray-100 last:border-0 page-break-inside-avoid">
                                 <td colSpan={4}>
-                                    <div className="grid grid-cols-12 gap-4 py-1.5 items-center">
+                                    <div className="grid grid-cols-12 gap-2 py-1 items-center">
                                         <div className="col-span-4">
-                                            <p className="font-medium text-gray-900 text-left text-sm leading-tight">{item.product.name}</p>
-                                            <p className="text-[10px] text-gray-500 text-left leading-tight">{item.product.sku}</p>
+                                            <p className="font-medium text-gray-900 text-left text-xs leading-tight">{item.product.name}</p>
+                                            <p className="text-[9px] text-gray-500 text-left leading-tight italic">{item.product.sku}</p>
                                         </div>
-                                        <div className="col-span-2 text-right text-gray-600 text-sm">
+                                        <div className="col-span-2 text-right text-gray-600 text-xs">
                                             {item.quantity}
-                                            {item.returnedQuantity > 0 && (
-                                                <span className="block text-[10px] text-red-500 font-bold">(-{item.returnedQuantity} Returned)</span>
-                                            )}
                                         </div>
-                                        <div className="col-span-3 text-right text-gray-600 text-sm">
-                                            ؋{(Number(item.unitPrice) * Number(invoice.exchangeRate || 70)).toFixed(0)}
+                                        <div className="col-span-3 text-right text-gray-600 text-xs font-mono">
+                                            ؋{(Number(item.unitPrice) * Number(invoice.exchangeRate || 70)).toLocaleString()}
                                         </div>
-                                        <div className="col-span-3 text-right font-medium text-gray-900 text-sm">
-                                            ؋{(Number(item.total) * Number(invoice.exchangeRate || 70)).toFixed(0)}
+                                        <div className="col-span-3 text-right font-bold text-gray-900 text-xs font-mono">
+                                            ؋{(Number(item.total) * Number(invoice.exchangeRate || 70)).toLocaleString()}
                                         </div>
                                     </div>
                                 </td>
