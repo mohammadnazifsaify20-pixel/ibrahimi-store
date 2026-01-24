@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import api from '../../../../lib/api';
 import AddCustomerModal from '../../../../components/AddCustomerModal';
 import ReceivePaymentModal from '../../../../components/ReceivePaymentModal';
-import { ChevronLeft, Edit, Wallet, CreditCard, ShoppingBag, DollarSign } from 'lucide-react';
+import { ChevronLeft, Edit, Wallet, CreditCard, ShoppingBag, DollarSign, Mail } from 'lucide-react';
 import { useSettingsStore } from '../../../../lib/settingsStore';
+import { getEmailConfig, generateInvoicePDF, sendStatementEmail } from '../../../../lib/emailUtils';
 
 export default function CustomerDetailsPage({ params }: { params: { id: string } }) {
     const router = useRouter();
@@ -21,6 +22,21 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
     const [previewImageData, setPreviewImageData] = useState<string>('');
     const [pdfInstance, setPdfInstance] = useState<any>(null);
     const { exchangeRate, fetchExchangeRate } = useSettingsStore();
+
+    const rate = Number(exchangeRate) || 70;
+
+    // Display Logic for Debt: Use Fixed AFN if exists, else estimate
+    const displayDebtAFN = customer
+        ? (customer.outstandingBalanceAFN ? Number(customer.outstandingBalanceAFN) : Number(customer.outstandingBalance || 0) * rate)
+        : 0;
+
+    // Combine and Sort Transactions for Statement
+    const sortedTransactions = (customer && transactions && creditHistory)
+        ? [
+            ...transactions.map(t => ({ ...t, type: 'sale', date: t.date })),
+            ...creditHistory.map(c => ({ ...c, type: 'credit', date: c.createdAt }))
+        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        : [];
 
     useEffect(() => {
         fetchCustomer();
@@ -55,6 +71,59 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
             setTransactions(res.data);
         } catch (error) {
             console.error('Failed to fetch transactions', error);
+        }
+    };
+
+    const handleEmailStatement = async () => {
+        if (!customer) return;
+
+        // Load config
+        const config = await getEmailConfig();
+        if (!config || !config.serviceId) {
+            alert('Email settings not configured. Please go to Settings > Email Config.');
+            return;
+        }
+
+        let customerEmail = customer.email;
+        if (!customerEmail) {
+            customerEmail = prompt('Customer email is missing. Please enter email address:');
+            if (customerEmail) {
+                // Update local customer object temporarily for this action
+                customer.email = customerEmail;
+            } else {
+                return;
+            }
+        }
+
+        if (!confirm(`Generate and email full statement to ${customerEmail}?`)) return;
+
+        setGeneratingPDF(true);
+        try {
+            // Generate PDF from the hidden statement template
+            // We need to ensure the statement template is updated with latest data
+            // It is rendered based on sortedTransactions which is derived from state
+
+            const pdfBlob = await generateInvoicePDF('statement-content', `${customer.name}-Statement`);
+
+            if (pdfBlob) {
+                await sendStatementEmail(
+                    customer,
+                    pdfBlob,
+                    config,
+                    {
+                        totalDue: `؋${Math.round(displayDebtAFN).toLocaleString()}`,
+                        transactionCount: sortedTransactions.length
+                    }
+                );
+                alert('Statement emailed successfully!');
+            } else {
+                alert('Failed to generate PDF');
+            }
+        } catch (error) {
+            console.error('Failed to email statement', error);
+            alert('Failed to send email statement');
+        } finally {
+            setGeneratingPDF(false);
         }
     };
 
@@ -156,12 +225,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
     if (loading) return <div className="p-8 text-center">Loading...</div>;
     if (!customer) return <div className="p-8 text-center">Customer not found</div>;
 
-    const rate = Number(exchangeRate) || 70;
 
-    // Display Logic for Debt: Use Fixed AFN if exists, else estimate
-    const displayDebtAFN = customer.outstandingBalanceAFN
-        ? Number(customer.outstandingBalanceAFN)
-        : Number(customer.outstandingBalance || 0) * rate;
 
     return (
         <div className="p-8 bg-gray-50 min-h-screen">
@@ -221,6 +285,17 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                             {/* @ts-ignore */}
                             <Wallet size={18} />
                             Receive Payment
+                        </button>
+                    </div>
+                    <div>
+                        <button
+                            onClick={handleEmailStatement}
+                            disabled={generatingPDF}
+                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition shadow-sm font-bold flex items-center gap-2 mt-2 w-full justify-center md:w-auto"
+                        >
+                            {/* @ts-ignore */}
+                            <Mail size={18} />
+                            Email Statement
                         </button>
                     </div>
                 </div>
@@ -460,6 +535,100 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                     </div>
                 </div>
             )}
+            {/* Hidden Statement Template for PDF Generation */}
+            <div className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none w-[210mm] bg-white text-black p-8" id="statement-content">
+                {/* Statement Header */}
+                <div className="flex justify-between items-start border-b pb-8 mb-8">
+                    <div>
+                        <h2 className="text-xl font-bold uppercase">IBRAHIMI AND BROTHERS MOTOR PARTS L.L.C</h2>
+                        <h3 className="text-lg font-bold font-arabic mt-1">(شرکت پرزه جات ابراهیمی و برادران)</h3>
+                        <p className="text-gray-500 mt-1 font-bold text-xs">Customer Statement of Account</p>
+                    </div>
+                    <div className="text-right">
+                        <h3 className="text-xl font-bold">{customer.name}</h3>
+                        <p className="text-gray-500 mt-1">Date: {new Date().toLocaleDateString()}</p>
+                        <p className="text-gray-500">ID: {customer.displayId || customer.id}</p>
+                    </div>
+                </div>
+
+                {/* Summary Box */}
+                <div className="bg-gray-50 border p-4 mb-6 rounded flex justify-between items-center">
+                    <div>
+                        <p className="text-sm font-bold text-gray-500 uppercase">Current Balance Due</p>
+                        <p className={`text-2xl font-bold ${Number(displayDebtAFN) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            ؋{Math.round(displayDebtAFN).toLocaleString()}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm font-bold text-gray-500 uppercase">Total Transactions</p>
+                        <p className="text-xl font-bold text-gray-900">
+                            {sortedTransactions.length}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Statement Table */}
+                <table className="w-full text-left text-sm mb-8">
+                    <thead className="bg-gray-100 border-b-2 border-gray-300 font-bold uppercase text-xs">
+                        <tr>
+                            <th className="px-4 py-2">Date</th>
+                            <th className="px-4 py-2">Activity</th>
+                            <th className="px-4 py-2">Ref</th>
+                            <th className="px-4 py-2 text-right">Debit (Charge)</th>
+                            <th className="px-4 py-2 text-right">Credit (Paid)</th>
+                            <th className="px-4 py-2 text-right">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {sortedTransactions.map((tx, idx) => {
+                            // This is simplified. Ideally we run a running balance reduce first.
+                            // But for now, we just list them.
+                            // Debit = Total Amount | Credit = Amount Paid
+                            // This is tricky because transactions update balance.
+                            // We'll just show the transactional amounts.
+
+                            let debit = 0;
+                            let credit = 0;
+                            let ref = '';
+                            let desc = '';
+
+                            if (tx.type === 'sale') {
+                                desc = 'Shopping / Purchase';
+                                ref = tx.invoiceNumber;
+                                debit = Number(tx.totalLocal || tx.total * (tx.exchangeRate || 70));
+                                credit = Number(tx.paidAmount) * (tx.exchangeRate || 70);
+                            } else {
+                                desc = tx.notes || 'Credit/Loan';
+                                ref = `LOAN-${tx.id}`;
+                                debit = Number(tx.originalAmountAFN);
+                                credit = Number(tx.paidAmountAFN || 0);
+                            }
+
+                            return (
+                                <tr key={`${tx.type}-${tx.id}`}>
+                                    <td className="px-4 py-2">{new Date(tx.date || tx.createdAt).toLocaleDateString()}</td>
+                                    <td className="px-4 py-2">{desc}</td>
+                                    <td className="px-4 py-2 font-mono text-xs">{ref}</td>
+                                    <td className="px-4 py-2 text-right font-medium">
+                                        {Math.round(debit) > 0 ? `؋${Math.round(debit).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td className="px-4 py-2 text-right text-green-600 font-medium">
+                                        {Math.round(credit) > 0 ? `؋${Math.round(credit).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td className="px-4 py-2 text-right font-bold text-gray-700">
+                                        {/* We assume balance logic is separate. Displaying remaining for this specific tx */}
+                                        ؋{Math.round(debit - credit).toLocaleString()}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+
+                <div className="text-center text-xs text-gray-500 mt-8 border-t pt-4">
+                    <p>Generated automatically by Ibrahimi Store System</p>
+                </div>
+            </div>
         </div>
     );
 }

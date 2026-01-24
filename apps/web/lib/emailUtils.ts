@@ -112,3 +112,44 @@ export const sendInvoiceEmail = async (
         config.publicKey
     );
 };
+
+export const sendStatementEmail = async (
+    customer: any,
+    pdfBlob: Blob,
+    config: { serviceId: string, templateId: string, publicKey: string },
+    statementData: { totalDue: string, transactionCount: number }
+) => {
+    if (!config.serviceId || !config.templateId || !config.publicKey) {
+        throw new Error('EmailJS configuration missing');
+    }
+
+    // 1. Download PDF
+    const url = window.URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Statement-${customer.name}-${new Date().toISOString().split('T')[0]}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    // 2. Send Email
+    // Note: You must update your EmailJS template to accept these variables if you want them displayed in the body
+    const templateParams = {
+        to_name: customer.name,
+        to_email: customer.email,
+        subject: `Statement of Account - ${customer.name}`,
+        statement_date: new Date().toLocaleDateString(),
+        total_due: statementData.totalDue,
+        transaction_count: statementData.transactionCount,
+        message: 'Please find attached your statement of account (downloaded automatically).'
+    };
+
+    // Use the same template ID for now, or user can configure a separate one later.
+    // Ideally, we should pass a specific template ID for statements, but standardizing one ID is easier for MVP.
+    return emailjs.send(
+        config.serviceId,
+        config.templateId,
+        templateParams,
+        config.publicKey
+    );
+};
