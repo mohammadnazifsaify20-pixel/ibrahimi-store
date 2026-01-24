@@ -15,7 +15,7 @@ body {
 
 @media print {
   @page {
-    margin: 10mm;
+    margin: 15mm;
     size: auto;
   }
 
@@ -29,17 +29,18 @@ body {
     print-color-adjust: exact !important;
   }
 
-  /* Reset layout containers that trap the height/pagination */
-  div,
+  /* Reset layout containers that trap the height/pagination (very important!) */
   main,
-  section,
-  [class*="overflow-hidden"] {
+  [class*="overflow-hidden"],
+  [class*="flex-1"],
+  .max-w-7xl,
+  div {
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
-    display: block !important;
     position: static !important;
+    display: block !important;
   }
 
   body {
@@ -55,10 +56,11 @@ body {
     display: none !important;
   }
 
-  /* Restore the original "Premium" look (Colors, Borders, Shadows) */
+  /* Ensure the invoice container is visible and flows naturally */
   #invoice-content {
     visibility: visible !important;
-    position: absolute;
+    position: relative !important;
+    /* Static/Relative allows multi-page splitting */
     left: 0;
     top: 0;
     width: 100% !important;
@@ -66,10 +68,10 @@ body {
     padding: 0 !important;
     background: white !important;
     overflow: visible !important;
-    z-index: 9999;
+    z-index: 100 !important;
   }
 
-  /* Table Header Repetition Support */
+  /* Table layout for header repetition */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -85,7 +87,7 @@ body {
     page-break-after: auto !important;
   }
 
-  /* Preserve all styling, colors and backgrounds from the original design */
+  /* Keep all the colors and design details from the screen */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
