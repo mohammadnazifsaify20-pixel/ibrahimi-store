@@ -100,6 +100,11 @@ export const sendInvoiceEmail = async (
     });
 
     const base64Data = (await base64Promise) as string;
+    const toEmail = invoice.customer?.email;
+
+    if (!toEmail) {
+        throw new Error("Recipient email address is missing. Please add an email to the customer or enter one when prompted.");
+    }
 
     const templateParams = {
         to_name: invoice.customer?.name || 'Customer',
