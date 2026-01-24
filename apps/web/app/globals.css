@@ -27,36 +27,25 @@ body {
     background: white !important;
   }
 
-  /* Reset dashboard/sidebar layout containers to allow pagination */
-  div,
-  main,
-  section {
-    display: block !important;
-    overflow: visible !important;
-    position: static !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
+  body {
+    visibility: hidden;
   }
 
-  /* Hide everything except the invoice content */
-  body>*:not(#invoice-content),
-  nav,
-  aside,
+  /* Hide specific UI elements */
   header,
+  aside,
+  .no-print,
   button,
-  .no-print {
+  nav {
     display: none !important;
   }
 
-  /* The main invoice container */
+  /* Revert to the user's preferred "Old" method but fix cutoff */
   #invoice-content {
     visibility: visible !important;
-    display: block !important;
-    position: static !important;
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -64,22 +53,18 @@ body {
     box-shadow: none !important;
     background: white !important;
     overflow: visible !important;
+    z-index: 9999;
   }
 
-  /* Ensure the table headers repeat on every page */
+  /* Table Header Repetition Support */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
     page-break-inside: auto !important;
-    table-layout: auto !important;
   }
 
   thead {
     display: table-header-group !important;
-  }
-
-  tbody {
-    display: table-row-group !important;
   }
 
   tr {
