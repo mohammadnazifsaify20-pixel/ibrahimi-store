@@ -120,7 +120,7 @@ export default function InvoicePage() {
     const outstandingAFN = Number(invoice.outstandingAmount) * exchangeRate;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
             <div className="flex justify-between items-center print:hidden">
                 <h1 className="text-2xl font-bold text-gray-900">Invoice Details</h1>
                 <button
@@ -194,7 +194,7 @@ export default function InvoicePage() {
                                 </div>
 
                                 {/* Inner Table Header for Items */}
-                                <div className="border-b border-gray-200 font-bold text-xs uppercase grid grid-cols-12 gap-4 pb-1 mb-2 text-gray-600 text-left">
+                                <div className="border-b border-gray-200 font-bold text-[11px] uppercase grid grid-cols-12 gap-2 pb-0.5 mb-1 text-gray-600 text-left">
                                     <div className="col-span-4">Item / جنس</div>
                                     <div className="col-span-2 text-right">Qty / تعداد</div>
                                     <div className="col-span-3 text-right">Price (AFG) / قیمت</div>

@@ -15,43 +15,40 @@ body {
 
 @media print {
   @page {
-    margin: 15mm;
+    margin: 10mm;
     size: auto;
   }
 
-  /* Force all layouts to allow flow and multiple pages */
+  /* 1. Global Reset: Remove all layout constraints */
   html,
   body {
     height: auto !important;
     overflow: visible !important;
     background: white !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
     margin: 0 !important;
     padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  body {
-    visibility: hidden !important;
-  }
-
-  /* Reset layout containers that trap the height/pagination */
+  /* 2. Reset Layout Containers (CRITICAL: Targets the Dashboard layout) */
+  /* This ensures the invoice starts at the absolute top of page 1 */
   main,
   [class*="overflow-hidden"],
   [class*="flex-1"],
   .max-w-7xl,
-  div {
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
-    min-height: 0 !important;
-    position: static !important;
-    display: block !important;
+  div,
+  section {
     margin: 0 !important;
     padding: 0 !important;
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
-  /* Hide specific UI elements */
+  /* 3. Hide non-invoice UI elements */
   nav,
   aside,
   header,
@@ -60,14 +57,11 @@ body {
     display: none !important;
   }
 
-  /* Ensure the invoice container is visible and flows naturally at the top */
+  /* 4. Invoice Container: Static flow for multi-page support */
   #invoice-content {
     visibility: visible !important;
     display: block !important;
-    position: absolute !important;
-    /* Force to absolute top to bypass layout offsets */
-    left: 0 !important;
-    top: 0 !important;
+    position: static !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -75,7 +69,7 @@ body {
     overflow: visible !important;
   }
 
-  /* Table layout for header repetition */
+  /* 5. Support Table Headers on Every Page */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -91,7 +85,7 @@ body {
     page-break-after: auto !important;
   }
 
-  /* Keep all the colors and design details from the screen */
+  /* Refresh style colors */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
