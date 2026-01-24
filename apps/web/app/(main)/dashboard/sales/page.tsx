@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Search, FileText, Calendar, User } from 'lucide-react';
 import clsx from 'clsx';
 import { format } from 'date-fns';
+import { getEmailConfig, generateInvoicePDF, sendInvoiceEmail } from '../../../../lib/emailUtils';
 
 interface Invoice {
     id: number;
@@ -21,6 +22,11 @@ export default function SalesPage() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [emailProcessing, setEmailProcessing] = useState(false);
+    const [emailProgress, setEmailProgress] = useState('');
+    // For batch email PDF generation
+    const [selectedInvoiceForEmail, setSelectedInvoiceForEmail] = useState<any>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -43,13 +49,85 @@ export default function SalesPage() {
         inv.customer?.name.toLowerCase().includes(search.toLowerCase())
     );
 
+    const toggleSelect = (id: number) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) newSelected.delete(id);
+        else newSelected.add(id);
+        setSelectedIds(newSelected);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filteredInvoices.length && filteredInvoices.length > 0) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredInvoices.map(inv => inv.id)));
+        }
+    };
+
+    const handleBatchEmail = async () => {
+        if (selectedIds.size === 0) return;
+
+        // Load config
+        const config = await getEmailConfig();
+        if (!config || !config.serviceId) {
+            alert('Email settings not configured. Please go to Settings > Email Config.');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to email receipts for ${selectedIds.size} invoices?`)) return;
+
+        setEmailProcessing(true);
+        let successCount = 0;
+        let failCount = 0;
+
+        const ids = Array.from(selectedIds);
+
+        for (let i = 0; i < ids.length; i++) {
+            const id = ids[i];
+            setEmailProgress(`Processing ${i + 1}/${ids.length}...`);
+
+            try {
+                // Fetch full invoice details
+                const res = await api.get(`/sales/${id}`);
+                const invoice = res.data;
+
+                // Set to state for rendering
+                setSelectedInvoiceForEmail(invoice);
+
+                // Wait for render
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Generate PDF
+                const pdfBlob = await generateInvoicePDF('email-invoice-content', invoice.invoiceNumber);
+
+                if (pdfBlob) {
+                    await sendInvoiceEmail(invoice, pdfBlob, config);
+                    successCount++;
+                } else {
+                    console.error('Failed to generate PDF for', invoice.invoiceNumber);
+                    failCount++;
+                }
+
+            } catch (error) {
+                console.error(`Failed to email invoice ${id}`, error);
+                failCount++;
+            }
+        }
+
+        setEmailProcessing(false);
+        setEmailProgress('');
+        setSelectedInvoiceForEmail(null);
+        alert(`Batch Email Completed.\nSent: ${successCount}\nFailed: ${failCount}`);
+        setSelectedIds(new Set());
+    };
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-gray-900">Sales History</h1>
 
             <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-                <div className="p-4 border-b">
-                    <div className="relative max-w-md">
+                <div className="p-4 border-b flex justify-between items-center">
+                    <div className="relative max-w-md flex-1">
                         {/* @ts-ignore */}
                         <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
                         <input
@@ -60,12 +138,38 @@ export default function SalesPage() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
+                    {selectedIds.size > 0 && (
+                        <button
+                            onClick={handleBatchEmail}
+                            disabled={emailProcessing}
+                            className="ml-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-bold shadow-sm flex items-center gap-2"
+                        >
+                            {emailProcessing ? (
+                                <>
+                                    <span className="animate-spin">⏳</span>
+                                    {emailProgress}
+                                </>
+                            ) : (
+                                <>
+                                    📧 Email Selected ({selectedIds.size})
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 text-gray-600 font-medium border-b">
                             <tr>
+                                <th className="px-6 py-4">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIds.size === filteredInvoices.length && filteredInvoices.length > 0}
+                                        onChange={toggleSelectAll}
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                                    />
+                                </th>
                                 <th className="px-6 py-4">Invoice #</th>
                                 <th className="px-6 py-4">Date</th>
                                 <th className="px-6 py-4">Customer</th>
@@ -83,6 +187,14 @@ export default function SalesPage() {
                             ) : (
                                 filteredInvoices.map((invoice) => (
                                     <tr key={invoice.id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => router.push(`/dashboard/sales/${invoice.id}`)}>
+                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.has(invoice.id)}
+                                                onChange={() => toggleSelect(invoice.id)}
+                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                                            />
+                                        </td>
                                         <td className="px-6 py-4 font-medium text-blue-600">{invoice.invoiceNumber}</td>
                                         <td className="px-6 py-4 text-gray-600">{format(new Date(invoice.date), 'MMM d, yyyy')}</td>
                                         <td className="px-6 py-4 text-gray-900">{invoice.customer?.name || 'Walk-in'}</td>

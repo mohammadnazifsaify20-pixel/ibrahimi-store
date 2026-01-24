@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import api from '../../../../../lib/api';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { Printer, RotateCcw } from 'lucide-react';
+import { Printer, RotateCcw, Mail } from 'lucide-react';
 import ReturnItemsModal from '../../../../../components/ReturnItemsModal';
+import { getEmailConfig, generateInvoicePDF, sendInvoiceEmail } from '../../../../../lib/emailUtils';
 
 interface InvoiceItem {
     id: number;
@@ -40,6 +41,7 @@ export default function InvoicePage() {
     const [invoice, setInvoice] = useState<Invoice | null>(null);
     const [loading, setLoading] = useState(true);
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+    const [emailProcessing, setEmailProcessing] = useState(false);
 
     useEffect(() => {
         if (id) fetchInvoice();
@@ -58,6 +60,55 @@ export default function InvoicePage() {
 
     const handlePrint = () => {
         window.print();
+    };
+
+    const handleEmailInvoice = async () => {
+        if (!invoice) return;
+
+        // Load config
+        const config = await getEmailConfig();
+        if (!config || !config.serviceId) {
+            alert('Email settings not configured. Please go to Settings > Email Config.');
+            return;
+        }
+
+        if (!invoice.customer?.displayId && !invoice.customer?.name.includes('@')) {
+            // weak check for email existence, better to check field if schema had it in this view
+            // But based on interface, customer is { name: string; phone?: string... }
+            // Let's prompt if we can't find email.
+        }
+
+        // We'll trust the user to enter email if missing or confirm
+        // Actually, interface Invoice says `customer: { name... }`. Code line 23 doesn't explicitly list email but line 114 shows it might be there.
+        // Let's assume customer object might have email or we prompt.
+
+        let customerEmail = (invoice.customer as any)?.email;
+        if (!customerEmail) {
+            customerEmail = prompt('Customer email is missing. Please enter email address:');
+            if (!customerEmail) return;
+        }
+
+        if (!confirm(`Send invoice to ${customerEmail}?`)) return;
+
+        setEmailProcessing(true);
+        try {
+            // We use the existing #invoice-content div
+            const pdfBlob = await generateInvoicePDF('invoice-content', invoice.invoiceNumber); // Use visible content
+
+            if (pdfBlob) {
+                // Create a temporary object with email for sending
+                const invoiceWithEmail = { ...invoice, customer: { ...invoice.customer, email: customerEmail } };
+                await sendInvoiceEmail(invoiceWithEmail, pdfBlob, config);
+                alert('Email sent successfully!');
+            } else {
+                alert('Failed to generate PDF');
+            }
+        } catch (error) {
+            console.error('Failed to email', error);
+            alert('Failed to send email');
+        } finally {
+            setEmailProcessing(false);
+        }
     };
 
     if (loading) return <div className="p-8 text-center text-gray-500">Loading invoice...</div>;
@@ -83,6 +134,19 @@ export default function InvoicePage() {
                     {/* @ts-ignore */}
                     <RotateCcw size={20} />
                     Return Items
+                </button>
+                <button
+                    onClick={handleEmailInvoice}
+                    disabled={emailProcessing}
+                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-bold"
+                >
+                    {emailProcessing ? 'Sending...' : (
+                        <>
+                            {/* @ts-ignore */}
+                            <Mail size={20} />
+                            Email Invoice
+                        </>
+                    )}
                 </button>
                 <button
                     onClick={handlePrint}
