@@ -182,6 +182,7 @@ export default function InvoicePage() {
                                         {/* @ts-ignore */}
                                         {invoice.customer?.displayId && <p className="text-gray-600 font-mono text-xs">ID / شناسنامه: {invoice.customer.displayId}</p>}
                                         {invoice.customer?.phone && <p className="text-gray-600">Phone / تلیفون: {invoice.customer.phone}</p>}
+                                        {(invoice.customer as any)?.email && <p className="text-gray-600">Email / ایمیل: {(invoice.customer as any).email}</p>}
                                         {invoice.customer?.address && <p className="text-gray-600">Address / آدرس: {invoice.customer.address}</p>}
                                     </div>
                                     <div className="text-right">
@@ -236,6 +237,10 @@ export default function InvoicePage() {
                             <div className="flex justify-between text-gray-600">
                                 <span>Subtotal (AFG) / جمع فرعی:</span>
                                 <span className="font-medium">؋{Math.floor(subtotalAFN).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-gray-600 text-sm border-b pb-1 mb-1">
+                                <span>Total Item Qty / مجموع تعداد اجناس:</span>
+                                <span className="font-medium">{invoice.items.reduce((acc, item) => acc + item.quantity, 0)}</span>
                             </div>
                             {Number(invoice.tax) > 0 && (
                                 <div className="flex justify-between text-gray-600">
