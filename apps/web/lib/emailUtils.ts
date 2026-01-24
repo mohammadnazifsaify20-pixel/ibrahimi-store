@@ -111,10 +111,11 @@ export const sendInvoiceEmail = async (
 
         invoice_number: invoice.invoiceNumber,
         date: new Date(invoice.date).toLocaleDateString(),
-        total_amount: invoice.totalLocal ? invoice.totalLocal : (Number(invoice.total) * (invoice.exchangeRate || 70)).toFixed(0),
-        paid_amount: invoice.paidAmount ? (Number(invoice.paidAmount) * (invoice.exchangeRate || 70)).toFixed(0) : '0',
-        outstanding_amount: ((Number(invoice.total) - Number(invoice.paidAmount || 0)) * (invoice.exchangeRate || 70)).toFixed(0),
-        items_list: invoice.items.map((i: any) => `${i.product?.name || 'Item'} x${i.quantity}`).join('\n'),
+        total_amount: invoice.totalLocal ? Number(invoice.totalLocal).toLocaleString() : (Number(invoice.total) * (invoice.exchangeRate || 70)).toLocaleString(),
+        paid_amount: invoice.paidAmount ? (Number(invoice.paidAmount) * (invoice.exchangeRate || 70)).toLocaleString() : '0',
+        outstanding_amount: ((Number(invoice.total) - Number(invoice.paidAmount || 0)) * (invoice.exchangeRate || 70)).toLocaleString(),
+        items_list: invoice.items.map((i: any) => `• ${i.product?.name || 'Item'} (x${i.quantity}) - ؋${(Number(i.total) * (invoice.exchangeRate || 70)).toLocaleString()}`).join('\n'),
+        invoice_url: `${window.location.origin}/view/invoice/${invoice.id}`,
 
         // This is for the PDF attachment
         content: base64Data,
