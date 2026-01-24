@@ -1,43 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ibrahimi Store - Desktop App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, sans-serif; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; cursor: pointer; border: none; }
-        .btn-primary { background: #2563eb; color: white; }
-        .btn-primary:hover { background: #1d4ed8; }
-        .btn-secondary { background: #64748b; color: white; }
-        .btn-secondary:hover { background: #475569; }
-        .btn-success { background: #16a34a; color: white; }
-        .btn-success:hover { background: #15803d; }
-        .btn-danger { background: #dc2626; color: white; }
-        .btn-danger:hover { background: #b91c1c; }
-        .cart-item { animation: slideIn 0.2s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        input, select, textarea { padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; width: 100%; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-        .sidebar { width: 240px; background: #1e293b; color: white; position: fixed; left: 0; top: 0; bottom: 0; overflow-y: auto; }
-        .sidebar a { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem; color: #cbd5e1; text-decoration: none; transition: all 0.2s; }
-        .sidebar a:hover, .sidebar a.active { background: #334155; color: white; }
-        .main-content { margin-left: 240px; padding: 2rem; min-height: 100vh; background: #f8fafc; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 0.5rem; overflow: hidden; }
-        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
-        th { background: #f1f5f9; font-weight: 600; color: #475569; }
-        tr:hover { background: #f8fafc; }
-        .stat-card { background: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-        .badge-success { background: #dcfce7; color: #166534; }
-        .badge-warning { background: #fef3c7; color: #92400e; }
-        .badge-danger { background: #fee2e2; color: #991b1b; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .cart-item {
+            animation: slideIn 0.2s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #1e293b;
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: #334155;
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 240px;
+            padding: 2rem;
+            min-height: 100vh;
+            background: #f8fafc;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
     </style>
 </head>
+
 <body>
     <!-- Sidebar Navigation -->
     <div class="sidebar">
@@ -47,41 +212,70 @@
         </div>
         <nav class="py-4">
             <a href="#" onclick="showPage('dashboard')" id="nav-dashboard" class="active">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
                 Dashboard
             </a>
             <a href="#" onclick="showPage('pos')" id="nav-pos">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
                 Point of Sale
             </a>
             <a href="#" onclick="showPage('inventory')" id="nav-inventory">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
                 Inventory
             </a>
             <a href="#" onclick="showPage('sales')" id="nav-sales">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
                 Sales
             </a>
             <a href="#" onclick="showPage('customers')" id="nav-customers">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
                 Customers
             </a>
             <a href="#" onclick="showPage('expenses')" id="nav-expenses">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 Expenses
             </a>
             <a href="#" onclick="showPage('reports')" id="nav-reports">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
                 Reports
             </a>
             <a href="#" onclick="showPage('settings')" id="nav-settings">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
                 Settings
             </a>
         </nav>
         <div class="border-t border-gray-700 p-4 mt-auto">
             <button onclick="logout()" class="w-full btn btn-secondary flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
                 Logout
             </button>
         </div>
@@ -145,7 +339,8 @@
                             <span>Total</span>
                             <span id="cart-total">؋0</span>
                         </div>
-                        <button onclick="openCheckoutModal()" class="w-full btn btn-primary py-3 text-lg">Checkout</button>
+                        <button onclick="openCheckoutModal()"
+                            class="w-full btn btn-primary py-3 text-lg">Checkout</button>
                     </div>
                 </div>
             </div>
@@ -175,7 +370,9 @@
                         </tr>
                     </thead>
                     <tbody id="inventory-tbody">
-                        <tr><td colspan="8" class="text-center text-gray-500">Loading...</td></tr>
+                        <tr>
+                            <td colspan="8" class="text-center text-gray-500">Loading...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -198,7 +395,9 @@
                         </tr>
                     </thead>
                     <tbody id="sales-tbody">
-                        <tr><td colspan="7" class="text-center text-gray-500">Loading...</td></tr>
+                        <tr>
+                            <td colspan="7" class="text-center text-gray-500">Loading...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -222,7 +421,9 @@
                         </tr>
                     </thead>
                     <tbody id="customers-tbody">
-                        <tr><td colspan="5" class="text-center text-gray-500">Loading...</td></tr>
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-500">Loading...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -246,7 +447,9 @@
                         </tr>
                     </thead>
                     <tbody id="expenses-tbody">
-                        <tr><td colspan="5" class="text-center text-gray-500">Loading...</td></tr>
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-500">Loading...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -309,7 +512,26 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-2">Admin Password (for deletions)</label>
-                            <input type="password" id="settings-admin-password" placeholder="Leave blank to keep current">
+                            <input type="password" id="settings-admin-password"
+                                placeholder="Leave blank to keep current">
+                        </div>
+
+                        <div class="border-t pt-4 mt-4">
+                            <h4 class="font-bold mb-2 text-gray-700">Email Settings (EmailJS)</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Service ID</label>
+                                    <input type="text" id="settings-email-service-id" placeholder="e.g. service_xyz">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Template ID</label>
+                                    <input type="text" id="settings-email-template-id" placeholder="e.g. template_abc">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Public Key</label>
+                                    <input type="text" id="settings-email-public-key" placeholder="e.g. user_123456">
+                                </div>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary">Save Settings</button>
                     </form>
@@ -327,7 +549,8 @@
                             <label class="block text-sm font-medium mb-2">Role</label>
                             <input type="text" id="profile-role" disabled class="bg-gray-100">
                         </div>
-                        <button onclick="openModal('modal-change-password')" class="btn btn-primary w-full">Change Password</button>
+                        <button onclick="openModal('modal-change-password')" class="btn btn-primary w-full">Change
+                            Password</button>
                     </div>
                 </div>
             </div>
@@ -375,7 +598,8 @@
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="btn btn-primary">Save Product</button>
-                    <button type="button" onclick="closeModal('modal-add-product')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="closeModal('modal-add-product')"
+                        class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
         </div>
@@ -404,9 +628,50 @@
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="btn btn-primary">Save Customer</button>
-                    <button type="button" onclick="closeModal('modal-add-customer')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="closeModal('modal-add-customer')"
+                        class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Customer History Modal -->
+    <div id="modal-customer-history" class="modal">
+        <div class="bg-white rounded-lg p-6 w-full" style="max-width: 900px;">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Customer History: <span id="history-customer-name"></span></h3>
+                <button onclick="closeModal('modal-customer-history')" class="text-gray-500 text-xl">&times;</button>
+            </div>
+
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="font-bold">Sales</h4>
+                <button id="btn-history-batch-email" onclick="emailHistoryBatch()" class="btn btn-primary"
+                    style="display:none; font-size: 0.8rem; padding: 4px 8px;">Email Selected</button>
+            </div>
+
+            <div class="overflow-x-auto" style="max-height: 500px; overflow-y: auto;">
+                <table class="w-full text-left border-collapse" id="history-table">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="p-3 border-b"><input type="checkbox" onclick="toggleHistorySelectAll(this)"></th>
+                            <th class="p-3 border-b">Invoice #</th>
+                            <th class="p-3 border-b">Date</th>
+                            <th class="p-3 border-b">Total</th>
+                            <th class="p-3 border-b">Paid</th>
+                            <th class="p-3 border-b">Status</th>
+                            <th class="p-3 border-b">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 flex justify-end">
+                <button onclick="closeModal('modal-customer-history')"
+                    class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Close</button>
+            </div>
         </div>
     </div>
 
@@ -435,7 +700,8 @@
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="btn btn-primary">Save Expense</button>
-                    <button type="button" onclick="closeModal('modal-add-expense')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="closeModal('modal-add-expense')"
+                        class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
         </div>
@@ -472,7 +738,8 @@
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="btn btn-success">Complete Sale</button>
-                    <button type="button" onclick="closeModal('modal-checkout')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="closeModal('modal-checkout')"
+                        class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
         </div>
@@ -485,6 +752,7 @@
                 <h3 class="text-2xl font-bold">Invoice Details</h3>
                 <div class="flex gap-2">
                     <button onclick="printInvoice()" class="btn btn-primary">Print</button>
+                    <button onclick="emailInvoice()" class="btn btn-success" id="btn-email-invoice">Email</button>
                     <button onclick="closeModal('modal-invoice-detail')" class="btn btn-secondary">Close</button>
                 </div>
             </div>
@@ -530,7 +798,8 @@
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="btn btn-success">Receive Payment</button>
-                    <button type="button" onclick="closeModal('modal-receive-payment')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="closeModal('modal-receive-payment')"
+                        class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
         </div>
@@ -551,12 +820,18 @@
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="btn btn-primary">Change Password</button>
-                    <button type="button" onclick="closeModal('modal-change-password')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="closeModal('modal-change-password')"
+                        class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Hidden Invoice Renderer for Bulk PDF Generation -->
+    <div id="invoice-renderer"
+        style="position: absolute; left: -9999px; top: 0; width: 800px; background: white; padding: 20px;"></div>
+
     <script src="app.js"></script>
 </body>
+
 </html>

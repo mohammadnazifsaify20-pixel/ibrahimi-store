@@ -5,13 +5,16 @@ function register(ipcMain) {
     try {
       const db = await getDatabase();
       const settings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
-      
+
       return {
         success: true,
         data: {
           exchangeRate: settings.exchange_rate,
           taxRate: settings.tax_rate,
-          companyName: settings.company_name
+          companyName: settings.company_name,
+          emailServiceId: settings.email_service_id,
+          emailTemplateId: settings.email_template_id,
+          emailPublicKey: settings.email_public_key
         }
       };
     } catch (error) {
@@ -23,9 +26,16 @@ function register(ipcMain) {
   ipcMain.handle('settings:update', async (event, { token, settings }) => {
     try {
       const db = await getDatabase();
-      
-      let query = 'UPDATE settings SET exchange_rate = ?, tax_rate = ?, company_name = ?';
-      const params = [settings.exchangeRate, settings.taxRate, settings.companyName];
+
+      let query = 'UPDATE settings SET exchange_rate = ?, tax_rate = ?, company_name = ?, email_service_id = ?, email_template_id = ?, email_public_key = ?';
+      const params = [
+        settings.exchangeRate,
+        settings.taxRate,
+        settings.companyName,
+        settings.emailServiceId || '',
+        settings.emailTemplateId || '',
+        settings.emailPublicKey || ''
+      ];
 
       if (settings.adminPassword) {
         const bcrypt = require('bcryptjs');
@@ -36,7 +46,7 @@ function register(ipcMain) {
 
       query += ' WHERE id = 1';
       db.prepare(query).run(...params);
-      
+
       return { success: true };
     } catch (error) {
       console.error('Update settings error:', error);

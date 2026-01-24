@@ -18,10 +18,10 @@ async function getDatabase() {
     if (!SQL) {
       SQL = await initSqlJs();
     }
-    
+
     const userDataPath = app.getPath('userData');
     const dbPath = path.join(userDataPath, 'ibrahimi-store.db');
-    
+
     // Load existing database or create new one
     if (fs.existsSync(dbPath)) {
       try {
@@ -36,10 +36,10 @@ async function getDatabase() {
       db = new SQL.Database();
       isDirty = true;
     }
-    
+
     // Set UTF-8 encoding for proper Persian/Farsi/Dari character support
     db.run('PRAGMA encoding = "UTF-8"');
-    
+
     // Save database changes to file ONLY if dirty
     setInterval(async () => {
       if (isDirty && !isSaving) {
@@ -55,12 +55,12 @@ async function saveDatabase(dbPath) {
     try {
       isSaving = true;
       // Note: db.export() is synchronous and can be slow for large DBs
-      const data = db.export(); 
+      const data = db.export();
       const buffer = Buffer.from(data);
-      
+
       // Use promises for async write to reduce blocking
       await fs.promises.writeFile(dbPath, buffer);
-      
+
       isDirty = false;
       // console.log('✅ Database saved silently');
     } catch (error) {
@@ -77,13 +77,13 @@ process.on('exit', () => {
   const dbPath = path.join(userDataPath, 'ibrahimi-store.db');
   // Sync save on exit is necessary
   if (db) {
-      try {
-        const data = db.export();
-        const buffer = Buffer.from(data);
-        fs.writeFileSync(dbPath, buffer);
-      } catch (e) {
-          console.error("Failed to save on exit", e);
-      }
+    try {
+      const data = db.export();
+      const buffer = Buffer.from(data);
+      fs.writeFileSync(dbPath, buffer);
+    } catch (e) {
+      console.error("Failed to save on exit", e);
+    }
   }
 });
 
@@ -240,10 +240,28 @@ async function initDatabase() {
       company_address TEXT,
       company_phone TEXT,
       admin_password TEXT,
+      email_service_id TEXT,
+      email_template_id TEXT,
+      email_public_key TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Migration: Add email columns if they don't exist (for existing users)
+  const safeAddColumn = (table, column, type) => {
+    try {
+      database.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+      console.log(`✅ Added column ${column} to ${table}`);
+      isDirty = true;
+    } catch (error) {
+      // Column likely already exists, ignore
+    }
+  };
+
+  safeAddColumn('settings', 'email_service_id', 'TEXT');
+  safeAddColumn('settings', 'email_template_id', 'TEXT');
+  safeAddColumn('settings', 'email_public_key', 'TEXT');
 
   // Create indexes for better performance
   database.run(`CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku)`);
@@ -256,7 +274,7 @@ async function initDatabase() {
   try {
     const userCountResult = database.exec('SELECT COUNT(*) as count FROM users');
     const userCount = userCountResult.length > 0 ? userCountResult[0].values[0][0] : 0;
-    
+
     if (userCount === 0) {
       const hashedPassword = await bcrypt.hash('Samir1379', 10);
       const stmt = database.prepare('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)');
@@ -273,7 +291,7 @@ async function initDatabase() {
   try {
     const settingsCountResult = database.exec('SELECT COUNT(*) as count FROM settings');
     const settingsCount = settingsCountResult.length > 0 ? settingsCountResult[0].values[0][0] : 0;
-    
+
     if (settingsCount === 0) {
       const defaultAdminPassword = await bcrypt.hash('admin123', 10);
       const stmt = database.prepare('INSERT INTO settings (id, exchange_rate, tax_rate, company_name, admin_password) VALUES (?, ?, ?, ?, ?)');
@@ -290,7 +308,7 @@ async function initDatabase() {
   const userDataPath = app.getPath('userData');
   const dbPath = path.join(userDataPath, 'ibrahimi-store.db');
   if (isDirty) {
-      await saveDatabase(dbPath);
+    await saveDatabase(dbPath);
   }
 
   console.log('✅ Database initialized successfully');
@@ -315,10 +333,10 @@ async function getDatabase() {
     if (!SQL) {
       SQL = await initSqlJs();
     }
-    
+
     const userDataPath = app.getPath('userData');
     const dbPath = path.join(userDataPath, 'ibrahimi-store.db');
-    
+
     // Load existing database or create new one
     if (fs.existsSync(dbPath)) {
       const buffer = fs.readFileSync(dbPath);
@@ -326,10 +344,10 @@ async function getDatabase() {
     } else {
       db = new SQL.Database();
     }
-    
+
     // Set UTF-8 encoding for proper Persian/Farsi/Dari character support
     db.run('PRAGMA encoding = "UTF-8"');
-    
+
     // Save database changes to file periodically
     setInterval(() => {
       saveDatabase(dbPath);
@@ -522,7 +540,7 @@ async function initDatabase() {
   try {
     const userCountResult = database.exec('SELECT COUNT(*) as count FROM users');
     const userCount = userCountResult.length > 0 ? userCountResult[0].values[0][0] : 0;
-    
+
     if (userCount === 0) {
       const hashedPassword = await bcrypt.hash('Samir1379', 10);
       const stmt = database.prepare('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)');
@@ -538,7 +556,7 @@ async function initDatabase() {
   try {
     const settingsCountResult = database.exec('SELECT COUNT(*) as count FROM settings');
     const settingsCount = settingsCountResult.length > 0 ? settingsCountResult[0].values[0][0] : 0;
-    
+
     if (settingsCount === 0) {
       const defaultAdminPassword = await bcrypt.hash('admin123', 10);
       const stmt = database.prepare('INSERT INTO settings (id, exchange_rate, tax_rate, company_name, admin_password) VALUES (?, ?, ?, ?, ?)');
