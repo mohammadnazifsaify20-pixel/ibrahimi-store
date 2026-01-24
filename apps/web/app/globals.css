@@ -15,59 +15,83 @@ body {
 
 @media print {
   @page {
-    margin: 0;
+    margin: 10mm;
     size: auto;
   }
 
+  /* Force all layouts to allow flow and multiple pages */
+  html,
   body {
-    visibility: hidden;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
   }
 
-  /* Hide all layout elements */
-  header,
+  /* Reset dashboard/sidebar layout containers to allow pagination */
+  div,
+  main,
+  section {
+    display: block !important;
+    overflow: visible !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Hide everything except the invoice content */
+  body>*:not(#invoice-content),
+  nav,
   aside,
+  header,
   button,
   .no-print {
     display: none !important;
   }
 
-  /* Only show invoice content */
+  /* The main invoice container */
   #invoice-content {
-    visibility: visible;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 20px;
-    margin: 0;
-    border: none;
-    box-shadow: none;
-    background: white;
-    z-index: 9999;
-    overflow: visible;
-    /* Important for multiple pages */
+    visibility: visible !important;
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    overflow: visible !important;
   }
 
-  /* Ensure text is black for printing */
-  * {
-    color: black !important;
-  }
-
-  /* Table Header Repetition Support */
+  /* Ensure the table headers repeat on every page */
   table {
-    page-break-inside: auto;
-  }
-
-  tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+    table-layout: auto !important;
   }
 
   thead {
-    display: table-header-group;
+    display: table-header-group !important;
   }
 
-  tfoot {
-    display: table-footer-group;
+  tbody {
+    display: table-row-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  /* Fix text styling for print */
+  * {
+    color: black !important;
+    background: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
