@@ -6,10 +6,22 @@ import api from './api';
 export const getEmailConfig = async () => {
     try {
         const res = await api.get('/settings/email-config');
-        return res.data;
+        if (res.data && res.data.serviceId) {
+            return res.data;
+        }
+        // Fallback to hardcoded values if server config is missing
+        return {
+            serviceId: 'Ibrahimi_store',
+            templateId: 'Ibrahimi',
+            publicKey: 'Mwae85yz2W-qmKv9O'
+        };
     } catch (error) {
-        console.error('Failed to load email config', error);
-        return null;
+        console.error('Failed to load email config, using default', error);
+        return {
+            serviceId: 'Ibrahimi_store',
+            templateId: 'Ibrahimi',
+            publicKey: 'Mwae85yz2W-qmKv9O'
+        };
     }
 };
 
