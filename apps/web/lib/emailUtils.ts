@@ -72,34 +72,13 @@ export const generateInvoicePDF = async (elementId: string, invoiceNumber: strin
 
 export const sendInvoiceEmail = async (
     invoice: any,
-    pdfBlob: Blob,
+    pdfBlob: Blob | null, // Made optional/nullable to avoid breaking callers
     config: { serviceId: string, templateId: string, publicKey: string }
 ) => {
     if (!config.serviceId || !config.templateId || !config.publicKey) {
         throw new Error('EmailJS configuration missing');
     }
 
-    // Convert Blob to Base64 for EmailJS attachment
-    const reader = new FileReader();
-    const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-            const result = reader.result as string;
-            if (result) {
-                const parts = result.split(',');
-                if (parts.length > 1 && typeof parts[1] === 'string') {
-                    resolve(parts[1]);
-                } else {
-                    reject(new Error('Invalid PDF data format'));
-                }
-            } else {
-                reject(new Error('Failed to read PDF blob'));
-            }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(pdfBlob);
-    });
-
-    const base64Data = (await base64Promise) as string;
     const toEmail = invoice.customer?.email;
 
     if (!toEmail) {
@@ -121,13 +100,9 @@ export const sendInvoiceEmail = async (
         outstanding_amount: ((Number(invoice.total) - Number(invoice.paidAmount || 0)) * (invoice.exchangeRate || 70)).toLocaleString(),
         items_list: invoice.items.map((i: any) => `• ${i.product?.name || 'Item'} (x${i.quantity}) - ؋${(Number(i.total) * (invoice.exchangeRate || 70)).toLocaleString()}`).join('\n'),
         invoice_url: `${window.location.origin}/view/invoice/${invoice.id}`,
-
-        // This is for the PDF attachment
-        content: base64Data,
-        invoice_pdf_name: `Invoice_${invoice.invoiceNumber}.pdf`
     };
 
-    console.log('Sending email with PDF attachment...');
+    console.log('Sending invoice email link...');
 
     return emailjs.send(
         config.serviceId,
