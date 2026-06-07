@@ -4,6 +4,7 @@ import { config } from "@repo/eslint-config/base";
 export default [
     ...config,
     {
+        files: ["src/**/*.ts"],
         languageOptions: {
             parserOptions: {
                 project: "./tsconfig.json",
@@ -11,4 +12,7 @@ export default [
             },
         },
     },
+    {
+        ignores: ["eslint.config.mjs", "scripts/**", "dist/**"]
+    }
 ];
